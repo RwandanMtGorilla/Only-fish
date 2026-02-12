@@ -1,0 +1,369 @@
+/*------------------------------------*\
+    RESET
+\*------------------------------------*/
+html,body,div,span,applet,object,iframe,
+h1,h2,h3,h4,h5,h6,p,blockquote,pre,
+a,abbr,acronym,address,big,cite,code,
+del,dfn,em,img,ins,kbd,q,s,samp,
+small,strike,strong,sub,sup,tt,var,
+b,u,i,center,
+dl,dt,dd,ol,ul,li,
+fieldset,form,label,legend,
+table,caption,tbody,tfoot,thead,tr,th,td,
+article,aside,canvas,details,figcaption,figure,
+footer,header,hgroup,menu,nav,section,summary,
+time,mark,audio,video{
+    margin:0;
+    padding:0;
+    border:0;
+    outline:0;
+    font-size:100%;
+    font:inherit;
+    vertical-align:baseline;
+}
+article,aside,details,figcaption,figure,
+footer,header,hgroup,menu,nav,section{
+    display:block;
+}
+body{
+    line-height:1;
+}
+ol,ul{
+    list-style:none;
+}
+blockquote,q{
+    quotes:none;
+}
+blockquote:before,blockquote:after,
+q:before,q:after{
+    content:'';
+    content:none;
+}
+ins{
+    text-decoration:none;
+}
+del{
+    text-decoration:line-through;
+}
+table{
+    border-collapse:collapse;
+    border-spacing:0;
+}
+
+/*------------------------------------*\
+    $MAIN
+\*------------------------------------*/
+
+#home {
+  height: 100vh;
+  width: 100vw;
+  max-height: 100vh;
+  max-width: 100vw;
+  overflow: hidden;
+  background-color: #0a1628;
+  color: rgba(255,255,255,.9);
+  font-family: arial;
+}
+
+canvas {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#boids-wrapper {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+}
+
+#boids-controls-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: auto;
+  padding: 20px 0;
+  text-transform: uppercase;
+}
+
+.boids-control {
+  box-sizing: border-box;
+  text-align: center;
+  font-family: arial;
+  text-transform: uppercase;
+  width: auto;
+  height: auto;
+  margin-left: 10px;
+  margin-right: 10px;
+  flex-wrap: wrap;
+}
+
+.range-slider .input-range {
+    height: auto;
+    margin-top: 12px;
+    margin-bottom: 2px;
+    background: none;
+    outline: none;
+    writing-mode: bt-lr;
+}
+
+::-moz-range-track {
+    background: #ccc;
+    border: 0;
+}
+
+input::-moz-focus-inner {
+  border: 0;
+}
+
+.boids-control-checkbox {
+  position: relative;
+}
+.checkbox {
+  position: relative;
+}
+.checkbox p {
+  z-index: 1;
+}
+.label-wrapper {
+  z-index: 1;
+  position:absolute;
+  width: 100%;
+  height: 15px;
+  margin-top: 10px;
+  margin-bottom: 2px;
+}
+.boids-control-checkbox label {
+  width: 15px;
+  height: 15px;
+  display: block;
+  position: relative;
+  box-sizing: border-box;
+  margin: auto;
+  top: -3px;
+  left: 0;
+  background: rgba(34,34,34,.8);
+  border: 1px solid #fff;
+  box-shadow: inset 0px 1px 1px rgba(0, 0, 0, 0.5), 0px 1px 0px rgba(255, 255, 255, 0.4);
+}
+.boids-control-checkbox label:after {
+  content: '';
+  width: 8px;
+  height: 5px;
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  border: 3px solid #fcfff4;
+  border-top: none;
+  border-right: none;
+  background: transparent;
+  opacity: 0;
+  transform: rotate(-45deg);
+}
+.boids-control-checkbox label:hover::after {
+  opacity: 0.3;
+}
+.boids-control input[type=range], .boids-control-checkbox label {
+  cursor: pointer;
+}
+.boids-control-checkbox input[type=checkbox] {
+  height: 0px;
+  width: 15px;
+  margin: 0 !important;
+  visibility: hidden;
+  z-index: 10;
+  cursor: pointer;
+}
+.boids-control-checkbox input[type=checkbox]:checked + label:after {
+  opacity: 1;
+}
+
+#fps {
+  position: absolute;
+  left:0;
+  bottom: 0;
+  font-size: 14px;
+  color: rgba(255,255,255,.6);
+  padding: 5px;
+}
+
+#mobile-boids-controls {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#mobile-boids-controls button {
+  background: none;
+  margin: 8px 3px 0px;
+  color: rgba(255,255,255,.8);
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 0;
+  cursor: pointer;
+  text-align: center;
+}
+#mobile-boids-controls button:focus {
+  outline:0;
+}
+#mobile-boids-controls button.boids-checkbox-on {
+  background-color: rgba(255,255,255,.8);
+  color: #000;
+}
+
+.boids-control-close {
+  display: none;
+  box-sizing:border-box;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 0;
+  right: 20px;
+  color: rgba(255,255,255,.8);
+  cursor: pointer;
+}
+.boids-control-close:hover::before, .boids-control-close:hover::after {
+  background: #1ebcc5;
+}
+.boids-control-close::before, .boids-control-close::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  width: 100%;
+  top: 50%;
+  left: 0;
+  margin-top: -1px;
+  background: rgba(255,255,255,.8);
+}
+.boids-control-close::before {
+  transform: rotate(45deg);
+}
+.boids-control-close::after {
+  transform: rotate(-45deg);
+}
+
+@media screen and (max-width: 1000px) {
+  #boids-controls-container {
+    padding: 16px 0;
+  }
+  .boids-control {
+    display: block;
+    position: absolute;
+    background: rgba(34,34,34,.8);
+    width: 100%;
+    padding: 0px 0px;
+    margin: 0;
+    max-height: 0px;
+    transition: max-height .5s ease-in-out, padding .5s ease-in-out;
+    bottom: 0px;
+  }
+  .boids-control.show {
+    position: relative;
+    height: auto;
+    max-height: 80px;
+    padding: 20px 0;
+  }
+  .boids-control-close {
+    display: inline-block;
+  }
+  #mobile-boids-controls {
+    display: block;
+  }
+  #fps {
+    font-size: 10px;
+    padding: 3px;
+  }
+}
+@media screen and (min-width: 1001px) {
+  #mobile-boids-controls {
+    display: none;
+  }
+}
+
+/*------------------------------------*\
+    $TOGGLE CONTROLS BUTTON
+\*------------------------------------*/
+
+#boids-controls-container.hidden {
+  display: none;
+}
+
+#toggle-controls-btn {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 20;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+#toggle-controls-btn:hover {
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#toggle-controls-btn:active {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+#toggle-controls-btn:focus {
+  outline: none;
+}
+
+#toggle-controls-btn.active {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/*------------------------------------*\
+    $ANIMAL SELECT
+\*------------------------------------*/
+
+.boids-control-select {
+  display: flex;
+  align-items: center;
+}
+
+.boids-control-select select {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: arial;
+  text-transform: uppercase;
+  cursor: pointer;
+  outline: none;
+}
+
+.boids-control-select select:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.boids-control-select select option {
+  background: #1a2a40;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+@media screen and (max-width: 1000px) {
+  .boids-control-select {
+    display: none;
+  }
+}

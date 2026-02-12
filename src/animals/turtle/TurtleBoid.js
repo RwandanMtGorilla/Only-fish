@@ -1,0 +1,235 @@
+/**
+ * TurtleBoid class - Combines boid flocking physics with Turtle rendering
+ * 乌龟特有的 boid 行为: 慢速移动, 大质量, 刚性壳
+ * 通用物理方法由 BoidPhysics mixin 提供
+ * @module animals/turtle/TurtleBoid
+ */
+
+import { Turtle } from './Turtle.js';
+import { applyBoidPhysics } from '../../boids/BoidPhysics.js';
+
+export class TurtleBoid {
+  /**
+   * @param {Object} config
+   * @param {number} config.id
+   * @param {string} config.group
+   * @param {number} config.x
+   * @param {number} config.y
+   * @param {number} config.scale
+   * @param {p5.Color} config.bodyColor - 皮肤颜色
+   * @param {p5.Color} config.finColor - 实际用作壳颜色 (复用 AnimalRegistry 的字段名)
+   * @param {number} config.colorId
+   * @param {number} config.introversion
+   * @param {number} config.introversionCoefficient
+   * @param {number} config.quickness
+   * @param {number} config.quicknessCoefficient
+   * @param {number} config.racism
+   * @param {number} config.racismCoefficient
+   * @param {number} config.speedIndex
+   */
+  constructor(config) {
+    this.id = config.id;
+    this.group = config.group;
+    this.scale = config.scale;
+    this.colorId = config.colorId;
+
+    // 物理状态
+    this.position = createVector(config.x, config.y);
+
+    // 个体差异系数
+    this.introversionCoefficient = config.introversionCoefficient;
+    this.introversion = config.introversion * this.introversionCoefficient;
+    this.quicknessCoefficient = config.quicknessCoefficient;
+    this.quickness = config.quickness * this.quicknessCoefficient;
+    this.racismCoefficient = config.racismCoefficient;
+    this.racism = config.racism * this.racismCoefficient;
+
+    // 速度 (乌龟较慢)
+    this.speedIndex = config.speedIndex;
+    this.maxSpeed = this.speedIndex * this.quickness;
+    this.maxForce = 0.15;
+
+    // 有效半径 (乌龟带壳更大)
+    this.radius = this.scale * 350;
+    this.mass = Math.pow(this.scale, 3) * 3;
+
+    // 随机初始速度
+    const angle = random(-PI, PI);
+    this.velocity = p5.Vector.fromAngle(angle).mult(this.maxSpeed * 0.3);
+
+    // 渲染实例 (config.finColor 作为壳颜色)
+    this.turtle = new Turtle(this.position.copy(), this.scale, config.bodyColor, config.finColor);
+
+    // 抓取状态 (乌龟缩壳, 不扭动)
+    this.isGrabbed = false;
+    this.grabThrash = false;
+
+    // 进食冷却 (乌龟吃得更慢)
+    this.lastEatTime = 0;
+    this.eatCooldown = 500;
+  }
+
+  // === 乌龟的 Boid 行为 ===
+
+  /**
+   * Separation: 远离附近 boid, 含 racism 额外排斥
+   */
+  separate(allBoids) {
+    const sum = createVector(0, 0);
+    let count = 0;
+    for (let j = 0; j < allBoids.length; j++) {
+      if (allBoids[j] === this) continue;
+      const racismMultiplier = (this.colorId !== allBoids[j].colorId) ? this.racism : 0;
+      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * racismMultiplier);
+      const sep = p5.Vector.dist(this.position, allBoids[j].position);
+      if (sep > 0 && sep < desiredSep) {
+        const diff = p5.Vector.sub(this.position, allBoids[j].position).normalize().div(sep);
+        sum.add(diff);
+        count++;
+      }
+    }
+    if (count > 0) {
+      sum.div(count);
+      sum.normalize();
+      sum.mult(this.maxSpeed);
+      sum.sub(this.velocity);
+      sum.limit(this.maxForce);
+    }
+    return sum;
+  }
+
+  /**
+   * Alignment: 趋向附近 boid 的平均速度方向
+   */
+  align(allBoids) {
+    const neighborDist = 400;
+    const sum = createVector(0, 0);
+    let count = 0;
+    for (let i = 0; i < allBoids.length; i++) {
+      if (allBoids[i] === this) continue;
+      if (allBoids[i].isGrabbed) continue;
+      const dist = p5.Vector.dist(this.position, allBoids[i].position);
+      if (dist > 0 && dist < neighborDist) {
+        sum.add(allBoids[i].velocity);
+        count++;
+      }
+    }
+    if (count > 0) {
+      sum.div(count);
+      sum.normalize();
+      sum.mult(this.maxSpeed);
+      sum.sub(this.velocity);
+      sum.limit(this.maxForce);
+      return sum;
+    }
+    return createVector(0, 0);
+  }
+
+  /**
+   * Cohesion: 趋向附近 boid 的平均位置
+   */
+  cohesion(allBoids) {
+    const neighborDist = 400;
+    const sum = createVector(0, 0);
+    let count = 0;
+    for (let i = 0; i < allBoids.length; i++) {
+      if (allBoids[i] === this) continue;
+      if (allBoids[i].isGrabbed) continue;
+      const dist = p5.Vector.dist(this.position, allBoids[i].position);
+      if (dist > 0 && dist < neighborDist) {
+        sum.add(allBoids[i].position);
+        count++;
+      }
+    }
+    if (count > 0) {
+      sum.div(count);
+      return this.seek(sum);
+    }
+    return createVector(0, 0);
+  }
+
+  /**
+   * 计算并施加所有群体行为力 (组内)
+   */
+  flock(sameGroupBoids, settings) {
+    const alignForce = this.align(sameGroupBoids);
+    const separateForce = this.separate(sameGroupBoids);
+    const cohesionForce = this.cohesion(sameGroupBoids);
+
+    // 乌龟力权重: 更注重个人空间, 较弱的跟随和聚合
+    this.applyForce(alignForce, 0.8);
+    this.applyForce(separateForce, 1.2);
+    this.applyForce(cohesionForce, 0.6);
+
+    if (settings.mouseSeek) {
+      const mouseForce = this.seek(settings.mousePos);
+      this.applyForce(mouseForce, 0.1);
+    }
+
+    if (settings.feedMode && settings.foods && settings.foods.length > 0) {
+      let closestFood = null;
+      let closestDist = Infinity;
+      for (let i = 0; i < settings.foods.length; i++) {
+        const d = p5.Vector.dist(this.position, settings.foods[i].position);
+        if (d < closestDist) {
+          closestDist = d;
+          closestFood = settings.foods[i];
+        }
+      }
+      if (closestFood) {
+        const foodForce = this.seek(closestFood.position);
+        this.applyForce(foodForce, 0.4);
+      }
+    }
+
+    if (settings.walls) {
+      const wallForce = this.avoidWalls(settings.canvasW, settings.canvasH, settings.center);
+      if (wallForce) this.applyForce(wallForce, 1.0);
+    }
+  }
+
+  /**
+   * 物理更新: 位移 + 碰撞 + 边界 + IK 解算
+   */
+  physicsUpdate(sameGroupBoids, settings) {
+    this.turtle.isRetracted = false;
+    this.position.add(this.velocity);
+    if (settings.collisions) this.detectCollision(sameGroupBoids);
+    this.edgeCheck(settings.walls, settings.canvasW, settings.canvasH);
+    this.turtle.resolveToPosition(this.position.copy());
+  }
+
+  /**
+   * 仅更新渲染位置 (用于被抓取时, 乌龟缩进壳里)
+   */
+  resolveRenderPosition() {
+    this.turtle.isRetracted = true;
+    this.turtle.resolveToPosition(this.position.copy());
+  }
+
+  /**
+   * 渲染乌龟
+   */
+  display() {
+    this.turtle.display();
+  }
+
+  /**
+   * 边界环绕: 含 resetSpine, 覆盖 BoidPhysics 的默认 borderWrap
+   */
+  borderWrap(w, h) {
+    let wrapped = false;
+    const margin = this.radius + 300;
+    if (this.position.x < -margin) { this.position.x = w + margin; wrapped = true; }
+    else if (this.position.x > w + margin) { this.position.x = -margin; wrapped = true; }
+    if (this.position.y < -margin) { this.position.y = h + margin; wrapped = true; }
+    else if (this.position.y > h + margin) { this.position.y = -margin; wrapped = true; }
+    if (wrapped) {
+      this.turtle.resetSpine(this.position, this.velocity.heading());
+    }
+  }
+}
+
+// 混入通用物理方法 (seek, applyForce, edgeCheck, wallBounce, collision 等)
+// TurtleBoid 已定义的方法不会被覆盖 (如 borderWrap)
+applyBoidPhysics(TurtleBoid);
