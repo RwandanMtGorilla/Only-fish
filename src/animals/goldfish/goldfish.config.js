@@ -17,19 +17,19 @@ export const goldfishConfig = {
   sliders: {
     introversion: {
       label: 'Introversion',
-      min: 0, max: 20, step: 1, defaultValue: 10,
+      min: 0, max: 20, step: 1, defaultValue: 3,
       toParam: (v) => v / 10,
       toUI: (v) => Math.round(v * 10),
     },
     speed: {
       label: 'Speed',
-      min: 0, max: 20, step: 1, defaultValue: 12,
+      min: 0, max: 20, step: 1, defaultValue: 16,
       toParam: (v) => v / 10 + 0.5,
       toUI: (v) => Math.round((v - 0.5) * 10),
     },
     racism: {
       label: 'Racism',
-      min: 0, max: 20, step: 1, defaultValue: 10,
+      min: 0, max: 20, step: 1, defaultValue: 3,
       toParam: (v) => v / 5,
       toUI: (v) => Math.round(v * 5),
     },
