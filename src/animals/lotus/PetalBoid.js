@@ -201,8 +201,9 @@ export class PetalBoid {
     for (let i = 0; i < allBoids.length; i++) {
       if (allBoids[i] === this) continue;
       if (allBoids[i].isGrabbed) continue;
-      // Skip other attached petals
+      // Skip other attached petals and lilypads
       if (allBoids[i].isPetal && !allBoids[i].isDetached) continue;
+      if (allBoids[i].isLilypad) continue;
       const otherCenter = allBoids[i].collisionCenter || allBoids[i].position;
       const dist = p5.Vector.dist(myCenter, otherCenter);
       if (dist - (this.radius + allBoids[i].radius) < 0) {

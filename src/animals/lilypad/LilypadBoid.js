@@ -53,6 +53,9 @@ export class LilypadBoid {
     this.anchor = this.position.copy();
     this.springK = 0.01;
 
+    // Type marker
+    this.isLilypad = true;
+
     // Renderer
     this.lilypad = new Lilypad(this.position.copy(), this.scale, config.bodyColor, config.finColor);
 
@@ -89,6 +92,7 @@ export class LilypadBoid {
     const k = 0.01;
     for (let j = 0; j < allBoids.length; j++) {
       if (allBoids[j] === this) continue;
+      if (allBoids[j].isPetal) continue;
       const desiredSep = this.radius + allBoids[j].radius;
       const sep = p5.Vector.dist(this.position, allBoids[j].position);
       if (sep > 0 && sep < desiredSep) {
@@ -127,6 +131,23 @@ export class LilypadBoid {
       sum.sub(this.velocity);
       sum.limit(this.maxForce);
       this.applyForce(sum, 1.0);
+    }
+  }
+
+  /**
+   * Collision detection: skip petals (both attached and detached)
+   */
+  detectCollision(allBoids) {
+    const myCenter = this.position;
+    for (let i = 0; i < allBoids.length; i++) {
+      if (allBoids[i] === this) continue;
+      if (allBoids[i].isGrabbed) continue;
+      if (allBoids[i].isPetal) continue;
+      const otherCenter = allBoids[i].collisionCenter || allBoids[i].position;
+      const dist = p5.Vector.dist(myCenter, otherCenter);
+      if (dist - (this.radius + allBoids[i].radius) < 0) {
+        this.resolveCollision(this, allBoids[i]);
+      }
     }
   }
 

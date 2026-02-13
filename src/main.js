@@ -12,8 +12,7 @@ import { FoodItem } from './entities/FoodItem.js';
 import { fishConfig } from './animals/fish/fish.config.js';
 import { turtleConfig } from './animals/turtle/turtle.config.js';
 import { goldfishConfig } from './animals/goldfish/goldfish.config.js';
-import { lilypadConfig } from './animals/lilypad/lilypad.config.js';
-import { lotusConfig } from './animals/lotus/lotus.config.js';
+import { pondPlantConfig } from './animals/pond_plant/pondPlant.config.js';
 
 // === 全局状态 ===
 const registry = new AnimalRegistry();
@@ -44,8 +43,7 @@ let grabThrashPhase = 0;
 registry.register(fishConfig);
 registry.register(turtleConfig);
 registry.register(goldfishConfig);
-registry.register(lilypadConfig);
-registry.register(lotusConfig);
+registry.register(pondPlantConfig);
 
 // === p5.js Lifecycle ===
 
