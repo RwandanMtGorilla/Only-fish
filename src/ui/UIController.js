@@ -208,9 +208,16 @@ export class UIController {
    */
   _syncSlidersToGroup(group) {
     const uiValues = this.registry.getSliderUIValues(group);
+    const sliderConfigs = this.registry.getSliderConfigs(group);
     for (const [key, val] of Object.entries(uiValues)) {
       const input = document.getElementById(key);
       if (input) {
+        const cfg = sliderConfigs[key];
+        if (cfg) {
+          input.min = cfg.min;
+          input.max = cfg.max;
+          input.step = cfg.step;
+        }
         input.value = val;
         const valueSpan = input.parentElement?.querySelector('.range-value');
         if (valueSpan) valueSpan.textContent = val;

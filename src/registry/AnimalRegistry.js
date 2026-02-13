@@ -78,6 +78,21 @@ export class AnimalRegistry {
   }
 
   /**
+   * 获取某组的滑块 min/max/step 配置 (用于下拉框切换时同步 DOM 属性)
+   * @param {string} group - 组名
+   * @returns {Object} { introversion: {min, max, step}, ... }
+   */
+  getSliderConfigs(group) {
+    const gs = this.groups.get(group);
+    if (!gs) return {};
+    const result = {};
+    for (const [key, slider] of Object.entries(gs.config.sliders)) {
+      result[key] = { min: slider.min, max: slider.max, step: slider.step };
+    }
+    return result;
+  }
+
+  /**
    * 设置某组的滑块值, 立即影响该组所有现有实例
    * @param {string} group - 组名
    * @param {string} sliderKey - 滑块键名
