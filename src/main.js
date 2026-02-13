@@ -13,6 +13,7 @@ import { fishConfig } from './animals/fish/fish.config.js';
 import { turtleConfig } from './animals/turtle/turtle.config.js';
 import { goldfishConfig } from './animals/goldfish/goldfish.config.js';
 import { lilypadConfig } from './animals/lilypad/lilypad.config.js';
+import { lotusConfig } from './animals/lotus/lotus.config.js';
 
 // === 全局状态 ===
 const registry = new AnimalRegistry();
@@ -44,6 +45,7 @@ registry.register(fishConfig);
 registry.register(turtleConfig);
 registry.register(goldfishConfig);
 registry.register(lilypadConfig);
+registry.register(lotusConfig);
 
 // === p5.js Lifecycle ===
 
@@ -143,7 +145,12 @@ window.windowResized = function () {
 function releaseGrabbedFish() {
   if (grabbedBoid) {
     grabbedBoid.isGrabbed = false;
-    grabbedBoid.velocity = p5.Vector.fromAngle(grabHeading).mult(grabbedBoid.maxSpeed * 0.3);
+    // Detached petals: throw outward instead of snapping back
+    if (grabbedBoid.isPetal && grabbedBoid.isDetached) {
+      grabbedBoid.velocity = p5.Vector.fromAngle(grabHeading).mult(grabbedBoid.maxSpeed * 0.5);
+    } else {
+      grabbedBoid.velocity = p5.Vector.fromAngle(grabHeading).mult(grabbedBoid.maxSpeed * 0.3);
+    }
     grabbedBoid = null;
   }
 }

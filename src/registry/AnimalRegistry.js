@@ -120,6 +120,7 @@ export class AnimalRegistry {
     for (const [group, gs] of this.groups) {
       for (const boid of gs.boids) {
         if (boid === grabbedBoid) continue;
+        if (boid.isDead) continue;
         // 组内完整 flock
         boid.flock(gs.boids, this.settings);
         // 跨组 separation (仅在有多组时)
@@ -130,6 +131,8 @@ export class AnimalRegistry {
         boid.physicsUpdate(gs.boids, this.settings);
       }
     }
+    // 清理已死亡的 boid (如脱离后淡出的花瓣)
+    this._purgeDeadBoids();
   }
 
   /**
@@ -208,6 +211,7 @@ export class AnimalRegistry {
     let closestBoid = null;
     let closestDist = Infinity;
     for (const boid of this._allBoids) {
+      if (boid.isDead) continue;
       const center = boid.hitCenter || boid.position;
       const d = p5.Vector.dist(mouseVec, center);
       const hitR = (boid.hitRadius || boid.radius) * 1.2;
@@ -289,5 +293,18 @@ export class AnimalRegistry {
     for (const [, gs] of this.groups) {
       this._allBoids.push(...gs.boids);
     }
+  }
+
+  /**
+   * 从各组中移除 isDead 的 boid, 并重建扁平列表
+   */
+  _purgeDeadBoids() {
+    let needsRebuild = false;
+    for (const [, gs] of this.groups) {
+      const before = gs.boids.length;
+      gs.boids = gs.boids.filter(b => !b.isDead);
+      if (gs.boids.length < before) needsRebuild = true;
+    }
+    if (needsRebuild) this._rebuildAllBoids();
   }
 }

@@ -183,6 +183,7 @@ const BoidPhysics = {
       const other = allBoids[j];
       if (other === this) continue;
       if (other.group === ownGroup) continue;
+      if (other.isDead) continue;
       const otherCenter = other.collisionCenter || other.position;
       const desiredSep = this.radius + (other.stemRadius ?? other.radius) + 30;
       const sep = p5.Vector.dist(myCenter, otherCenter);
