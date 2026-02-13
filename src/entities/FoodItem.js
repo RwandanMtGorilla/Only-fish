@@ -67,13 +67,13 @@ export class FoodItem {
     }
 
     if (!closestBoid) return;
-
+    const hpFactor = 1.5 / this.hp;
     const center = closestBoid.collisionCenter || closestBoid.position;
-    const attractRange = closestBoid.radius * 1.6;
+    const attractRange = closestBoid.radius * 1.6 *  hpFactor;
     const t = closestDist / attractRange;
     const basePull = (1 - t) * (1 - t);
-    const hpFactor = 1.5 / this.hp;
-    const maxPullSpeed = 1.3;
+
+    const maxPullSpeed = 1.1 * hpFactor;
     const speed = basePull * hpFactor * maxPullSpeed;
 
     const dir = p5.Vector.sub(center, this.position);
