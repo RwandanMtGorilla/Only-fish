@@ -23,7 +23,7 @@ export class LotusCenter {
 
     // Pre-generate stamen dots (outer ring, dense yellow)
     this.stamenDots = [];
-    const stamenCount = Math.floor(random(20, 30));
+    const stamenCount = Math.floor(random(40, 50));
     for (let i = 0; i < stamenCount; i++) {
       const angle = random(TWO_PI);
       const r = random(0.45, 0.9) * this.podRadius;
@@ -36,7 +36,7 @@ export class LotusCenter {
 
     // Pre-generate carpel dots (center, dense orange)
     this.carpelDots = [];
-    const carpelCount = Math.floor(random(12, 18));
+    const carpelCount = Math.floor(random(24, 36));
     for (let i = 0; i < carpelCount; i++) {
       const angle = random(TWO_PI);
       const r = random(0.05, 0.45) * this.podRadius;

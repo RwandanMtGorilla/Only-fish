@@ -69,7 +69,7 @@ export class Petal {
     fill(red(pc), green(pc), blue(pc), this.alpha);
     const ec = this.petalEdgeColor;
     stroke(red(ec), green(ec), blue(ec), this.alpha);
-    strokeWeight(1.2 * this.scale);
+    strokeWeight(1.8 * this.scale);
 
     // Teardrop shape using curveVertex
     beginShape();
@@ -93,7 +93,7 @@ export class Petal {
 
     // Central vein line
     stroke(red(ec), green(ec), blue(ec), this.alpha * 0.4);
-    strokeWeight(0.8 * this.scale);
+    strokeWeight(1.2 * this.scale);
     line(0, len * 0.1, this.tipBend * w * 0.5, len * 0.85);
 
     pop();
