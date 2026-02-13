@@ -30,7 +30,7 @@ export class LotusCenter {
       this.stamenDots.push({
         x: cos(angle) * r,
         y: sin(angle) * r,
-        size: random(2.0, 3.5) * scale,
+        size: random(3.0, 5.0) * scale,
       });
     }
 
@@ -43,7 +43,7 @@ export class LotusCenter {
       this.carpelDots.push({
         x: cos(angle) * r,
         y: sin(angle) * r,
-        size: random(1.8, 3.0) * scale,
+        size: random(3.5, 5.5) * scale,
       });
     }
   }

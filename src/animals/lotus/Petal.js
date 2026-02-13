@@ -33,8 +33,8 @@ export class Petal {
     );
 
     // Petal dimensions scale with layer (outer petals are larger)
-    this.petalLength = (50 + layerIndex * 18) * scale;
-    this.petalWidth = (22 + layerIndex * 6) * scale;
+    this.petalLength = (72 + layerIndex * 7) * scale;
+    this.petalWidth = (28 + layerIndex * 3) * scale;
 
     // Per-petal random variation for natural look
     this.tipBend = random(-0.06, 0.06);

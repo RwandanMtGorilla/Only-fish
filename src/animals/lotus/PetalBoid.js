@@ -246,7 +246,7 @@ export class PetalBoid {
 
     // Update render position and angle
     const renderAngle = this.isDetached
-      ? (this.velocity.mag() > 0.1 ? this.velocity.heading() : this.angle || this.angleOffset)
+      ? (this.angle || this.angleOffset)
       : atan2(
         this.position.y - this.parentCenter.position.y,
         this.position.x - this.parentCenter.position.x
@@ -256,8 +256,12 @@ export class PetalBoid {
   }
 
   resolveRenderPosition() {
-    // Check detach during grab (physicsUpdate is skipped for grabbed boids)
     if (!this.isDetached) {
+      // Spring reaction force on center (flock() is skipped for grabbed boids)
+      const target = this._getAttachPosition();
+      const springForce = p5.Vector.sub(target, this.position).mult(this.springK);
+      this.parentCenter.velocity.add(springForce.copy().mult(-0.3));
+      // Check detach during grab (physicsUpdate is skipped for grabbed boids)
       this._checkDetach();
     }
     const renderAngle = !this.isDetached
