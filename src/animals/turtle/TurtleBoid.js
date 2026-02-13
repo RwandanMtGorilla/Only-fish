@@ -50,7 +50,7 @@ export class TurtleBoid {
     this.maxForce = 0.15;
 
     // 有效半径 (乌龟带壳更大)
-    this.radius = this.scale * 350;
+    this.radius = this.scale * 210;
     // 抓取判定半径 (贴合壳实际大小, 小于物理碰撞半径)
     this.hitRadius = this.scale * 200;
     this.mass = Math.pow(this.scale, 3) * 3;
@@ -89,7 +89,7 @@ export class TurtleBoid {
    * 使物理碰撞以龟壳为中心
    */
   get collisionCenter() {
-    const offset = this.scale * 84;  // ≈1.75 linkSize，头部与壳之间
+    const offset = this.scale * 96;  // ≈1.75 linkSize，头部与壳之间
     const heading = this.velocity.heading();
     return createVector(
       this.position.x - cos(heading) * offset,
