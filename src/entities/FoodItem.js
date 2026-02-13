@@ -56,7 +56,7 @@ export class FoodItem {
       if (boid === grabbedBoid || boid.isGrabbed) continue;
       if (boid.eatCooldown == null) continue;
 
-      const center = boid.collisionCenter || boid.position;
+      const center = boid.position;
       const d = p5.Vector.dist(this.position, center);
       const attractRange = boid.radius * 3;
 
@@ -68,7 +68,7 @@ export class FoodItem {
 
     if (!closestBoid) return;
     const hpFactor = 1.5 / this.hp;
-    const center = closestBoid.collisionCenter || closestBoid.position;
+    const center = closestBoid.position;
     const attractRange = closestBoid.radius * 1.6 *  hpFactor;
     const t = closestDist / attractRange;
     const basePull = (1 - t) * (1 - t);
