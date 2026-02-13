@@ -11,6 +11,7 @@ import { FoodItem } from './entities/FoodItem.js';
 // === 动物注册 (扩展时只需加一行 import + register) ===
 import { fishConfig } from './animals/fish/fish.config.js';
 import { turtleConfig } from './animals/turtle/turtle.config.js';
+import { goldfishConfig } from './animals/goldfish/goldfish.config.js';
 
 // === 全局状态 ===
 const registry = new AnimalRegistry();
@@ -40,6 +41,7 @@ let grabThrashPhase = 0;
 // === 注册动物 ===
 registry.register(fishConfig);
 registry.register(turtleConfig);
+registry.register(goldfishConfig);
 
 // === p5.js Lifecycle ===
 
