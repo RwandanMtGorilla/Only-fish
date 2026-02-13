@@ -184,7 +184,7 @@ const BoidPhysics = {
       if (other === this) continue;
       if (other.group === ownGroup) continue;
       const otherCenter = other.collisionCenter || other.position;
-      const desiredSep = this.radius + other.radius + 30;
+      const desiredSep = this.radius + (other.stemRadius ?? other.radius) + 30;
       const sep = p5.Vector.dist(myCenter, otherCenter);
       if (sep > 0 && sep < desiredSep) {
         const diff = p5.Vector.sub(myCenter, otherCenter).normalize().div(sep);

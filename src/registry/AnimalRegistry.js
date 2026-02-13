@@ -227,6 +227,13 @@ export class AnimalRegistry {
    */
   _createBoids(groupState) {
     const { config } = groupState;
+
+    // 如果配置提供了自定义创建逻辑，优先使用
+    if (typeof config.customCreateBoids === 'function') {
+      config.customCreateBoids(groupState);
+      return;
+    }
+
     const getCoeff = gaussian(config.coefficients.general.mean, config.coefficients.general.stdev);
     const getQuickCoeff = gaussian(config.coefficients.quickness.mean, config.coefficients.quickness.stdev);
     const diversity = groupState.sliderValues.diversity;

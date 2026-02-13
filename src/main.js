@@ -12,6 +12,7 @@ import { FoodItem } from './entities/FoodItem.js';
 import { fishConfig } from './animals/fish/fish.config.js';
 import { turtleConfig } from './animals/turtle/turtle.config.js';
 import { goldfishConfig } from './animals/goldfish/goldfish.config.js';
+import { lilypadConfig } from './animals/lilypad/lilypad.config.js';
 
 // === 全局状态 ===
 const registry = new AnimalRegistry();
@@ -42,6 +43,7 @@ let grabThrashPhase = 0;
 registry.register(fishConfig);
 registry.register(turtleConfig);
 registry.register(goldfishConfig);
+registry.register(lilypadConfig);
 
 // === p5.js Lifecycle ===
 
@@ -180,6 +182,10 @@ function updateGrabbedBoid(boid) {
   const finalY = mouseY + sin(perpAngle) * thrashOffset;
 
   boid.position.set(finalX, finalY);
+  // Dragging a lilypad moves its spring anchor too
+  if (boid.anchor) {
+    boid.anchor.set(finalX, finalY);
+  }
   boid.velocity = p5.Vector.fromAngle(grabHeading).mult(0.01);
   boid.resolveRenderPosition();
 }
