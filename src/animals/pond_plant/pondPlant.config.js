@@ -15,11 +15,13 @@ import { PLANT_SLIDERS, PLANT_PHYSICS, PLANT_COEFFICIENTS, applyCommonPlantSlide
 export const pondPlantConfig = {
   group: 'pond_plant',
   label: '水生植物',
-  defaultCount: 3,    // lilypad count (lotus count is separate below)
+  lilypadDefaultCount: 3,    // lilypad count
+  lotusDefaultCount: 10,
   zIndex: 20,
   BoidClass: LilypadBoid,  // Nominal; customCreateBoids handles both types
 
-  scaleRange: { min: 0.4, max: 0.95 },  // Lilypad scale range (lotus uses its own)
+  scaleRange: { min: 0.4, max: 0.95 },       // Lilypad scale range
+  lotusScaleRange: { min: 0.3, max: 0.6 },
 
   sliders: PLANT_SLIDERS,
   palettes: LILYPAD_PALETTES,  // Nominal; customCreateBoids picks from separate palette arrays
@@ -40,7 +42,7 @@ export const pondPlantConfig = {
     let boidId = 0;
 
     // --- Phase 1: Lilypad cluster spawn ---
-    const lilypadCount = 3;
+    const lilypadCount = config.lilypadDefaultCount;
     const clusterCount = Math.max(2, Math.floor(lilypadCount / 4) + 1);
     const margin = 250;
     const clusterCenters = [];
@@ -67,7 +69,7 @@ export const pondPlantConfig = {
         const x = constrain(cx + cos(angle) * dist, 80, width - 80);
         const y = constrain(cy + sin(angle) * dist, 80, height - 80);
 
-        const s = random(0.4, 0.95);
+        const s = random(config.scaleRange.min, config.scaleRange.max);
         const paletteIdx = lilypadIdx % diversity;
         const palette = LILYPAD_PALETTES[paletteIdx % LILYPAD_PALETTES.length];
 
@@ -93,8 +95,8 @@ export const pondPlantConfig = {
     }
 
     // --- Phase 2: Lotus (center + petals) ---
-    const lotusCount = 2;
-    const lotusScaleRange = { min: 0.3, max: 0.6 };
+    const lotusCount = config.lotusDefaultCount;
+    const lotusScaleRange = config.lotusScaleRange;
 
     for (let c = 0; c < lotusCount; c++) {
       const cx = random(margin, width - margin);
