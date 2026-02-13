@@ -51,6 +51,8 @@ export class TurtleBoid {
 
     // 有效半径 (乌龟带壳更大)
     this.radius = this.scale * 350;
+    // 抓取判定半径 (贴合壳实际大小, 小于物理碰撞半径)
+    this.hitRadius = this.scale * 200;
     this.mass = Math.pow(this.scale, 3) * 3;
 
     // 随机初始速度
@@ -67,6 +69,19 @@ export class TurtleBoid {
     // 进食冷却 (乌龟吃得更慢)
     this.lastEatTime = 0;
     this.eatCooldown = 500;
+  }
+
+  /**
+   * 命中测试中心: 从头部沿速度反方向偏移到壳附近
+   * 使抓取判定以龟背为中心而非头部
+   */
+  get hitCenter() {
+    const offset = this.scale * 168;  // ≈3.5 linkSize，壳前半区域
+    const heading = this.velocity.heading();
+    return createVector(
+      this.position.x - cos(heading) * offset,
+      this.position.y - sin(heading) * offset
+    );
   }
 
   // === 乌龟的 Boid 行为 ===

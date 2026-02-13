@@ -129,6 +129,27 @@ export class AnimalRegistry {
   }
 
   /**
+   * 调试渲染: 显示碰撞半径 (红) 和抓取判定半径 (绿)
+   */
+  renderDebugRadii() {
+    push();
+    noFill();
+    strokeWeight(1);
+    for (const boid of this._allBoids) {
+      // 物理碰撞半径
+      stroke(255, 100, 100, 80);
+      ellipse(boid.position.x, boid.position.y, boid.radius * 2);
+
+      // 抓取判定半径
+      stroke(100, 255, 100, 80);
+      const center = boid.hitCenter || boid.position;
+      const hitR = (boid.hitRadius || boid.radius) * 1.2;
+      ellipse(center.x, center.y, hitR * 2);
+    }
+    pop();
+  }
+
+  /**
    * 所有组共享的食物碰撞检测
    * @param {Array} foods - 食物列表
    * @param {Object|null} grabbedBoid - 被抓住的 boid (跳过)
@@ -164,8 +185,10 @@ export class AnimalRegistry {
     let closestBoid = null;
     let closestDist = Infinity;
     for (const boid of this._allBoids) {
-      const d = p5.Vector.dist(mouseVec, boid.position);
-      if (d < boid.radius * 1.2 && d < closestDist) {
+      const center = boid.hitCenter || boid.position;
+      const d = p5.Vector.dist(mouseVec, center);
+      const hitR = (boid.hitRadius || boid.radius) * 1.2;
+      if (d < hitR && d < closestDist) {
         closestDist = d;
         closestBoid = boid;
       }

@@ -22,6 +22,7 @@ let settings = {
   collisions: true,
   feedMode: true,
   grabFish: true,
+  showRadii: false,
   foods: null,
   mousePos: null,
   center: null,
@@ -80,6 +81,11 @@ window.draw = function () {
 
   // 渲染所有动物
   registry.render();
+
+  // 调试: 显示碰撞/抓取半径
+  if (settings.showRadii) {
+    registry.renderDebugRadii();
+  }
 
   // FPS 显示
   if (frameCount % 60 === 0) {

@@ -81,6 +81,7 @@ export class UIController {
         desktopId: 'grab-fish', mobileId: 'grab-fish-mobile', settingKey: 'grabFish', defaultChecked: true,
         onOff(val) { if (!val) self.callbacks.releaseGrabbedFish?.(); },
       },
+      { desktopId: 'show-radii', mobileId: 'show-radii-mobile', settingKey: 'showRadii', defaultChecked: false },
     ];
 
     for (const cfg of configs) {

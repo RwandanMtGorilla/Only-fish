@@ -68,6 +68,19 @@ export class FishBoid {
     this.eatCooldown = 300;
   }
 
+  /**
+   * 命中测试中心: 从头部沿速度反方向略微偏移到鱼身前段
+   * 使抓取判定更贴近鱼身而非鱼嘴
+   */
+  get hitCenter() {
+    const offset = this.scale * 96;  // ≈1.5 linkSize，鱼身最宽处附近
+    const heading = this.velocity.heading();
+    return createVector(
+      this.position.x - cos(heading) * offset,
+      this.position.y - sin(heading) * offset
+    );
+  }
+
   // === 鱼特有的 Boid 行为 ===
 
   /**
