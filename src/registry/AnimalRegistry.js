@@ -138,7 +138,8 @@ export class AnimalRegistry {
     for (const boid of this._allBoids) {
       // 物理碰撞半径
       stroke(255, 100, 100, 80);
-      ellipse(boid.position.x, boid.position.y, boid.radius * 2);
+      const collCenter = boid.collisionCenter || boid.position;
+      ellipse(collCenter.x, collCenter.y, boid.radius * 2);
 
       // 抓取判定半径
       stroke(100, 255, 100, 80);
@@ -159,7 +160,8 @@ export class AnimalRegistry {
       if (boid === grabbedBoid) continue;
       if (boid.eatCooldown == null) continue; // 该动物不参与进食
       for (let j = foods.length - 1; j >= 0; j--) {
-        const dist = p5.Vector.dist(boid.position, foods[j].position);
+        const boidCenter = boid.collisionCenter || boid.position;
+        const dist = p5.Vector.dist(boidCenter, foods[j].position);
         if (dist < boid.radius * 0.5 + foods[j].radius) {
           const now = millis();
           if (now - boid.lastEatTime < boid.eatCooldown) break;

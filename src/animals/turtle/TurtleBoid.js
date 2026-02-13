@@ -84,6 +84,19 @@ export class TurtleBoid {
     );
   }
 
+  /**
+   * 碰撞判定中心: 从头部沿速度反方向偏移到壳附近
+   * 使物理碰撞以龟壳为中心
+   */
+  get collisionCenter() {
+    const offset = this.scale * 84;  // ≈1.75 linkSize，头部与壳之间
+    const heading = this.velocity.heading();
+    return createVector(
+      this.position.x - cos(heading) * offset,
+      this.position.y - sin(heading) * offset
+    );
+  }
+
   // === 乌龟的 Boid 行为 ===
 
   /**

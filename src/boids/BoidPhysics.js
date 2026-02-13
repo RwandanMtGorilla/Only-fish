@@ -113,10 +113,12 @@ const BoidPhysics = {
    * @param {Array} allBoids
    */
   detectCollision(allBoids) {
+    const myCenter = this.collisionCenter || this.position;
     for (let i = 0; i < allBoids.length; i++) {
       if (allBoids[i] === this) continue;
       if (allBoids[i].isGrabbed) continue;
-      const dist = p5.Vector.dist(this.position, allBoids[i].position);
+      const otherCenter = allBoids[i].collisionCenter || allBoids[i].position;
+      const dist = p5.Vector.dist(myCenter, otherCenter);
       if (dist - (this.radius + allBoids[i].radius) < 0) {
         this.resolveCollision(this, allBoids[i]);
       }
@@ -137,13 +139,15 @@ const BoidPhysics = {
    * 弹性碰撞解算 (基于质量的动量守恒)
    */
   resolveCollision(boid, otherBoid) {
+    const boidCenter = boid.collisionCenter || boid.position;
+    const otherCenter = otherBoid.collisionCenter || otherBoid.position;
     const xVelocityDiff = boid.velocity.x - otherBoid.velocity.x;
     const yVelocityDiff = boid.velocity.y - otherBoid.velocity.y;
-    const xDist = otherBoid.position.x - boid.position.x;
-    const yDist = otherBoid.position.y - boid.position.y;
+    const xDist = otherCenter.x - boidCenter.x;
+    const yDist = otherCenter.y - boidCenter.y;
 
     if (xVelocityDiff * xDist + yVelocityDiff * yDist >= 0) {
-      const angle = -Math.atan2(otherBoid.position.y - boid.position.y, otherBoid.position.x - boid.position.x);
+      const angle = -Math.atan2(otherCenter.y - boidCenter.y, otherCenter.x - boidCenter.x);
       const m1 = boid.mass;
       const m2 = otherBoid.mass;
 
@@ -172,16 +176,18 @@ const BoidPhysics = {
    * @param {string} ownGroup - 自己所属的组名
    */
   separateFromOthers(allBoids, ownGroup) {
+    const myCenter = this.collisionCenter || this.position;
     const sum = createVector(0, 0);
     let count = 0;
     for (let j = 0; j < allBoids.length; j++) {
       const other = allBoids[j];
       if (other === this) continue;
       if (other.group === ownGroup) continue;
+      const otherCenter = other.collisionCenter || other.position;
       const desiredSep = this.radius + other.radius + 30;
-      const sep = p5.Vector.dist(this.position, other.position);
+      const sep = p5.Vector.dist(myCenter, otherCenter);
       if (sep > 0 && sep < desiredSep) {
-        const diff = p5.Vector.sub(this.position, other.position).normalize().div(sep);
+        const diff = p5.Vector.sub(myCenter, otherCenter).normalize().div(sep);
         sum.add(diff);
         count++;
       }
