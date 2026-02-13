@@ -264,14 +264,18 @@ export class PetalBoid {
       // Check detach during grab (physicsUpdate is skipped for grabbed boids)
       this._checkDetach();
     }
-    const renderAngle = !this.isDetached
-      ? atan2(
-        this.position.y - this.parentCenter.position.y,
-        this.position.x - this.parentCenter.position.x
-      )
-      : (this.angle || this.angleOffset);
-    this.angle = renderAngle;
-    this.petal.resolveToPosition(this.position.copy(), renderAngle);
+    // When grabbed: keep current angle stable to avoid hitCenter feedback loop
+    // (hitCenter depends on angle; recalculating angle from new position causes oscillation)
+    if (!this.isGrabbed) {
+      const renderAngle = !this.isDetached
+        ? atan2(
+          this.position.y - this.parentCenter.position.y,
+          this.position.x - this.parentCenter.position.x
+        )
+        : (this.angle || this.angleOffset);
+      this.angle = renderAngle;
+    }
+    this.petal.resolveToPosition(this.position.copy(), this.angle);
   }
 
   display() {
