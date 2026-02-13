@@ -10,9 +10,9 @@ import { gaussian } from '../../utils/gaussian.js';
 
 // Petal layer definitions: inner to outer
 const PETAL_LAYERS = [
-  { count: 5, distance: 25, size: 0.7 },   // Inner: 5 petals, base at pod edge
-  { count: 7, distance: 38, size: 0.85 },   // Mid: 7 petals, tight wrap
-  { count: 9, distance: 50, size: 1.0 },    // Outer: 9 petals
+  { count: 5, distance: 20, size: 0.7 },   // Inner: 5 petals
+  { count: 7, distance: 22, size: 0.85 },   // Mid: 7 petals
+  { count: 9, distance: 24, size: 1.0 },    // Outer: 9 petals
 ];
 
 export const lotusConfig = {
@@ -22,7 +22,7 @@ export const lotusConfig = {
   zIndex: 21,   // Above lilypad (20)
   BoidClass: LotusCenterBoid,
 
-  scaleRange: { min: 0.5, max: 0.8 },
+  scaleRange: { min: 0.3, max: 0.6 },
 
   sliders: {
     introversion: {

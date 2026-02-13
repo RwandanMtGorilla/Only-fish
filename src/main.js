@@ -188,7 +188,15 @@ function updateGrabbedBoid(boid) {
   const finalX = mouseX + cos(perpAngle) * thrashOffset;
   const finalY = mouseY + sin(perpAngle) * thrashOffset;
 
-  boid.position.set(finalX, finalY);
+  // 花瓣: 以几何中心对齐鼠标, 反算根部位置
+  if (boid.isPetal && boid.hitCenter) {
+    const hc = boid.hitCenter;
+    const offsetX = hc.x - boid.position.x;
+    const offsetY = hc.y - boid.position.y;
+    boid.position.set(finalX - offsetX, finalY - offsetY);
+  } else {
+    boid.position.set(finalX, finalY);
+  }
   // Dragging a lilypad moves its spring anchor too
   if (boid.anchor) {
     boid.anchor.set(finalX, finalY);

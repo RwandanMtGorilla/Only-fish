@@ -17,9 +17,20 @@ export class Petal {
     this.position = origin.copy();
     this.angle = 0;
 
-    this.petalColor = petalColor;
-    this.petalEdgeColor = petalEdgeColor;
     this.layerIndex = layerIndex;
+
+    // Outer layers get darker colors (inner=1.0, mid=0.9, outer=0.8)
+    const darken = 1.0 - layerIndex * 0.1;
+    this.petalColor = color(
+      red(petalColor) * darken,
+      green(petalColor) * darken,
+      blue(petalColor) * darken
+    );
+    this.petalEdgeColor = color(
+      red(petalEdgeColor) * darken,
+      green(petalEdgeColor) * darken,
+      blue(petalEdgeColor) * darken
+    );
 
     // Petal dimensions scale with layer (outer petals are larger)
     this.petalLength = (50 + layerIndex * 18) * scale;

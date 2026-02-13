@@ -88,6 +88,13 @@ export class PetalBoid {
   }
 
   /**
+   * Collision center at petal geometric center (matches hitCenter)
+   */
+  get collisionCenter() {
+    return this.hitCenter;
+  }
+
+  /**
    * Hit center at petal geometric center (not root)
    */
   get hitCenter() {
