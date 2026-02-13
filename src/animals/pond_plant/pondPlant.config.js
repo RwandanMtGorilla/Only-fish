@@ -16,7 +16,7 @@ export const pondPlantConfig = {
   group: 'pond_plant',
   label: '水生植物',
   lilypadDefaultCount: 3,    // lilypad count
-  lotusDefaultCount: 10,
+  lotusDefaultCount: 2,
   zIndex: 20,
   BoidClass: LilypadBoid,  // Nominal; customCreateBoids handles both types
 
