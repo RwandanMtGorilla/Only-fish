@@ -34,7 +34,7 @@ export const fishConfig = {
     },
     speed: {
       label: 'Speed',
-      min: 0, max: 20, step: 1, defaultValue: 12,
+      min: 0, max: 20, step: 1, defaultValue: 6,
       toParam: (v) => v / 10 + 0.5,
       toUI: (v) => Math.round((v - 0.5) * 10),
     },
@@ -46,27 +46,22 @@ export const fishConfig = {
     },
     diversity: {
       label: 'Diversity',
-      min: 1, max: 8, step: 1, defaultValue: 3,
+      min: 1, max: 8, step: 1, defaultValue: 2,
       toParam: (v) => v,
       toUI: (v) => v,
     },
   },
 
-  // 颜色调色板
+  // 颜色调色板 (鲫鱼配色)
   palettes: [
-    { body: [58, 124, 165],  fin: [129, 195, 215] },   // Blue
-    { body: [165, 82, 58],   fin: [215, 155, 129] },    // Orange/coral
-    { body: [58, 165, 100],  fin: [129, 215, 170] },    // Green
-    { body: [140, 58, 165],  fin: [190, 129, 215] },    // Purple
-    { body: [165, 145, 58],  fin: [215, 200, 129] },    // Gold
-    { body: [58, 145, 165],  fin: [129, 200, 215] },    // Teal
-    { body: [165, 58, 120],  fin: [215, 129, 180] },    // Pink
-    { body: [80, 100, 165],  fin: [140, 160, 215] },    // Indigo
+    { body: [118, 118, 108], fin: [145, 140, 125] },  // 银灰鲫鱼
+    { body: [100, 108, 85],  fin: [135, 132, 100] },  // 青灰鲫鱼
+    { body: [148, 128, 90],  fin: [170, 145, 105] },  // 黄褐鲫鱼
   ],
 
   // 物理参数
   physics: {
-    speedIndex: 4.8,
+    speedIndex: 3.1,
     maxForce: 0.3,
   },
 
