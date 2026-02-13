@@ -28,10 +28,10 @@ export class Goldfish {
     this.bodyWidth = [52, 68, 72, 70, 62, 48, 36, 26, 22, 14].map(w => w * scale);
 
     // Pectoral fin IK chains (left/right, 5 joints each, loose angle constraint for flowing motion)
-    const finLinkSize = Math.round(40 * scale);
-    this.leftPecFin = new Chain(origin, 5, finLinkSize, PI / 3);
-    this.rightPecFin = new Chain(origin, 5, finLinkSize, PI / 3);
-    this.finWidths = [20, 36, 30, 18, 6].map(w => w * scale);
+    const finLinkSize = Math.round(35 * scale);
+    this.leftPecFin = new Chain(origin, 5, finLinkSize, PI / 2);
+    this.rightPecFin = new Chain(origin, 5, finLinkSize, PI / 2);
+    this.finWidths = [35, 42, 35, 40, 0].map(w => w * scale);
   }
 
   /**
@@ -45,12 +45,12 @@ export class Goldfish {
     const a2 = this.spine.angles[2];
     const bw2 = this.bodyWidth[2];
     this.leftPecFin.resolve(createVector(
-      j2.x + cos(a2 + PI / 3) * bw2,
-      j2.y + sin(a2 + PI / 3) * bw2
+      j2.x + cos(a2 + PI / 12 *5) * bw2,
+      j2.y + sin(a2 + PI / 12 *5) * bw2
     ));
     this.rightPecFin.resolve(createVector(
-      j2.x + cos(a2 - PI / 3) * bw2,
-      j2.y + sin(a2 - PI / 3) * bw2
+      j2.x + cos(a2 - PI / 12 *5) * bw2,
+      j2.y + sin(a2 - PI / 12 *5) * bw2
     ));
   }
 
@@ -174,14 +174,19 @@ export class Goldfish {
     const fj = finChain.joints;
     const fa = finChain.angles;
     const fw = this.finWidths;
+    // Shift the inner-side root toward the head so the fin attaches further forward
+    const rootShift = this.scale * 30;
     beginShape();
+    // Outer edge
     for (let i = 0; i < fj.length; i++) {
       curveVertex(fj[i].x + cos(fa[i] + PI / 2) * fw[i],
                   fj[i].y + sin(fa[i] + PI / 2) * fw[i]);
     }
+    // Inner edge (reversed), root joints shifted forward along spine direction
     for (let i = fj.length - 1; i >= 0; i--) {
-      curveVertex(fj[i].x + cos(fa[i] - PI / 2) * fw[i],
-                  fj[i].y + sin(fa[i] - PI / 2) * fw[i]);
+      const shift = i < 3 ? rootShift * (1 - i * 0.3) : 0;
+      curveVertex(fj[i].x + cos(fa[i] - PI / 2) * fw[i] - cos(fa[i]) * shift,
+                  fj[i].y + sin(fa[i] - PI / 2) * fw[i] - sin(fa[i]) * shift);
     }
     endShape(CLOSE);
   }

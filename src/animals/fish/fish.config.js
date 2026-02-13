@@ -13,7 +13,7 @@ export const fishConfig = {
   label: 'Fish',
 
   // 默认生成数量
-  defaultCount: 18,
+  defaultCount: 5,
 
   // 绘制层级 (越小越先绘制, 在底层)
   zIndex: 10,

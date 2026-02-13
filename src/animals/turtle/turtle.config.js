@@ -12,8 +12,8 @@ export const turtleConfig = {
   // 下拉框中显示的名称
   label: 'Turtle',
 
-  // 默认生成数量 (乌龟较大, 数量少些)
-  defaultCount: 8,
+  // 默认生成数量 (乌龟数量少些)
+  defaultCount: 3,
 
   // 绘制层级 (越小越先绘制, 在底层)
   zIndex: 0,
