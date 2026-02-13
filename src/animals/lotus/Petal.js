@@ -19,17 +19,17 @@ export class Petal {
 
     this.layerIndex = layerIndex;
 
-    // Outer layers get darker colors (inner=1.0, mid=0.9, outer=0.8)
-    const darken = 1.0 - layerIndex * 0.1;
+    // Inner petals blend toward white (pale), outer petals keep full saturation (vivid)
+    const whiteMix = 0.35 - layerIndex * 0.15;
     this.petalColor = color(
-      red(petalColor) * darken,
-      green(petalColor) * darken,
-      blue(petalColor) * darken
+      red(petalColor) + (255 - red(petalColor)) * whiteMix,
+      green(petalColor) + (255 - green(petalColor)) * whiteMix,
+      blue(petalColor) + (255 - blue(petalColor)) * whiteMix
     );
     this.petalEdgeColor = color(
-      red(petalEdgeColor) * darken,
-      green(petalEdgeColor) * darken,
-      blue(petalEdgeColor) * darken
+      red(petalEdgeColor) + (255 - red(petalEdgeColor)) * whiteMix,
+      green(petalEdgeColor) + (255 - green(petalEdgeColor)) * whiteMix,
+      blue(petalEdgeColor) + (255 - blue(petalEdgeColor)) * whiteMix
     );
 
     // Petal dimensions scale with layer (outer petals are larger)

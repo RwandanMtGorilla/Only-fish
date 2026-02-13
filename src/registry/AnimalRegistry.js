@@ -139,8 +139,22 @@ export class AnimalRegistry {
    * 每帧渲染所有组的 boid (按 zIndex 从小到大, 小的在底层)
    */
   render() {
+    let detachedRendered = false;
     for (const gs of this._renderOrder) {
+      // 在 lilypad 层之前插入脱落花瓣渲染 (鱼之上、荷叶之下)
+      if (!detachedRendered && (gs.config.zIndex ?? 0) >= 20) {
+        detachedRendered = true;
+        for (const gs2 of this._renderOrder) {
+          for (const boid of gs2.boids) {
+            if (boid.isPetal && boid.isDetached && !boid.isDead) {
+              boid.display();
+            }
+          }
+        }
+      }
+      // 正常渲染，跳过脱落花瓣
       for (const boid of gs.boids) {
+        if (boid.isPetal && boid.isDetached) continue;
         boid.display();
       }
     }

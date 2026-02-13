@@ -47,8 +47,8 @@ export class PetalBoid {
     this.isDead = false;
 
     // Spring connection to center
-    this.springK = 0.2;
-    this.detachThreshold = this.distanceFromCenter * 2.5;
+    this.springK = 0.42;
+    this.detachThreshold = this.distanceFromCenter * 3.4;
 
     // Fade-out timing (after detach)
     this.detachTime = 0;
