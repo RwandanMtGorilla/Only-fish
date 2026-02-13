@@ -36,9 +36,9 @@ export class LilypadBoid {
     // Leaf-level radius (used for same-group collision between lilypads)
     this.radius = this.scale * 120;
     // Stem-level radius (used for cross-group separation with fish/turtles)
-    this.stemRadius = this.scale * 30;
+    this.stemRadius = this.scale * 7;
     // Hit test uses leaf radius
-    this.hitRadius = this.scale * 120;
+    this.hitRadius = this.scale * 100;
 
     // Heavy mass (hard to push)
     this.mass = Math.pow(this.scale, 2) * 8;
@@ -73,8 +73,7 @@ export class LilypadBoid {
     const springForce = p5.Vector.sub(this.anchor, this.position).mult(this.springK);
     this.velocity.add(springForce);
 
-    const separateForce = this.separate(sameGroupBoids);
-    this.applyForce(separateForce, 0.3);
+    this.separate(sameGroupBoids);
 
     if (settings.walls) {
       const wallForce = this.avoidWalls(settings.canvasW, settings.canvasH, settings.center);
@@ -83,29 +82,21 @@ export class LilypadBoid {
   }
 
   /**
-   * Separation using leaf radius (same group = leaf-level collision)
+   * Linear spring repulsion between lilypads (leaf-level)
+   * F = k * overlap, where overlap = desiredSep - distance
    */
   separate(allBoids) {
-    const sum = createVector(0, 0);
-    let count = 0;
+    const k = 0.01;
     for (let j = 0; j < allBoids.length; j++) {
       if (allBoids[j] === this) continue;
-      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion);
+      const desiredSep = this.radius + allBoids[j].radius;
       const sep = p5.Vector.dist(this.position, allBoids[j].position);
       if (sep > 0 && sep < desiredSep) {
-        const diff = p5.Vector.sub(this.position, allBoids[j].position).normalize().div(sep);
-        sum.add(diff);
-        count++;
+        const overlap = desiredSep - sep;
+        const force = p5.Vector.sub(this.position, allBoids[j].position).normalize().mult(overlap * k);
+        this.velocity.add(force);
       }
     }
-    if (count > 0) {
-      sum.div(count);
-      sum.normalize();
-      sum.mult(this.maxSpeed);
-      sum.sub(this.velocity);
-      sum.limit(this.maxForce);
-    }
-    return sum;
   }
 
   /**

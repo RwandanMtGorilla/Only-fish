@@ -81,7 +81,7 @@ export class Lilypad {
       green(this.bodyColor) * 0.65,
       blue(this.bodyColor) * 0.55
     );
-    strokeWeight(1.5 * s);
+    strokeWeight(3.5 * s);
 
     // Build vertices: start from notch end, go around, end at notch start, then center
     beginShape();
@@ -108,7 +108,7 @@ export class Lilypad {
 
     // === Radial veins ===
     stroke(this.veinColor);
-    strokeWeight(1.2 * s);
+    strokeWeight(2.2 * s);
     noFill();
     for (let i = 0; i < this.veinCount; i++) {
       const v = this.veinCurves[i];

@@ -14,7 +14,7 @@ export const lilypadConfig = {
   zIndex: 20,
   BoidClass: LilypadBoid,
 
-  scaleRange: { min: 0.6, max: 1.2 },
+  scaleRange: { min: 0.4, max: 0.95 },
 
   sliders: {
     introversion: {
@@ -93,12 +93,12 @@ export const lilypadConfig = {
 
       const cx = clusterCenters[c].x;
       const cy = clusterCenters[c].y;
-      const spread = 80 + random(0, 40);
+      const spread = 220 + random(0, 40);
 
       for (let i = 0; i < clusterSize; i++) {
         // Gaussian-distributed offset from cluster center
         const angle = random(TWO_PI);
-        const dist = abs(randomGaussian(0, spread * 0.5));
+        const dist = abs(randomGaussian(spread * 0.4, spread * 0.8));
         const x = constrain(cx + cos(angle) * dist, 80, width - 80);
         const y = constrain(cy + sin(angle) * dist, 80, height - 80);
 
