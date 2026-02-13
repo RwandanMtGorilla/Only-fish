@@ -22,7 +22,7 @@ export class Lilypad {
     this.rotation = random(TWO_PI);
     // Notch direction relative to rotation
     this.notchAngle = random(TWO_PI);
-    this.notchHalf = PI / 10; // half-width of notch (~18 degrees each side, 36 total)
+    this.notchHalf = random(PI / 60, PI / 10); // half-width of notch (random: ~3° to ~18°)
 
     // Colors
     this.bodyColor = bodyColor || color(60, 140, 60);
