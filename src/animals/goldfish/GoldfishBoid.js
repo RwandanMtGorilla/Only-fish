@@ -56,7 +56,7 @@ export class GoldfishBoid {
     this.velocity = p5.Vector.fromAngle(angle).mult(this.maxSpeed * 0.5);
 
     // Renderer
-    this.goldfish = new Goldfish(this.position.copy(), this.scale, config.bodyColor, config.finColor);
+    this.goldfish = new Goldfish(this.position.copy(), this.scale, config.bodyColor, config.finColor, config.patchConfig);
 
     // Grab state
     this.isGrabbed = false;

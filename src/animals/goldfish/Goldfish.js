@@ -1,11 +1,21 @@
 /**
  * Goldfish class - Procedural goldfish rendering with triple-forked tail fin
  * 14-segment IK spine (10 body + 4 tail), larger pectoral fins, flowing tri-lobe caudal fin
+ * Supports optional koi-style color patches via canvas clip
  * @module animals/goldfish/Goldfish
  */
 
 import { Chain } from '../../core/Chain.js';
 import { relativeAngleDiff } from '../../utils/geometry.js';
+
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
 
 export class Goldfish {
   /**
@@ -14,7 +24,7 @@ export class Goldfish {
    * @param {p5.Color} bodyColor - Body fill color
    * @param {p5.Color} finColor - Fin fill color
    */
-  constructor(origin, scale = 1.0, bodyColor = null, finColor = null) {
+  constructor(origin, scale = 1.0, bodyColor = null, finColor = null, patchConfig = null) {
     this.scale = scale;
 
     // 14 segments: 10 body + 4 tail (more tail joints for tri-lobe fin)
@@ -32,6 +42,15 @@ export class Goldfish {
     this.leftPecFin = new Chain(origin, 5, finLinkSize, PI / 2);
     this.rightPecFin = new Chain(origin, 5, finLinkSize, PI / 2);
     this.finWidths = [35, 42, 35, 40, 0].map(w => w * scale);
+
+    // Koi-style color patches
+    if (patchConfig && patchConfig.colors) {
+      this.patches = this._generatePatches(patchConfig.colors, patchConfig.density, patchConfig.seed);
+      this.patchColors = patchConfig.colors.map(c => color(c[0], c[1], c[2]));
+    } else {
+      this.patches = [];
+      this.patchColors = [];
+    }
   }
 
   /**
@@ -123,25 +142,27 @@ export class Goldfish {
     this._drawFinLobe(j, a, headToTail, s, 1, 1.3, 40 * s);   // lower lobe
     this._drawFinLobe(j, a, headToTail, s, 0, 0.8, 55 * s);   // center lobe
 
+    // === BODY (fill + optional patches + stroke) ===
+    noStroke();
     fill(this.bodyColor);
+    this._drawBodyShape();
 
-    // === BODY ===
-    beginShape();
-    for (let i = 0; i < 10; i++) {
-      curveVertex(this._getPosX(i, PI / 2, 0), this._getPosY(i, PI / 2, 0));
+    if (this.patches.length > 0) {
+      const ctx = drawingContext;
+      ctx.save();
+      this._buildBodyClipPath(ctx);
+      ctx.clip();
+      noStroke();
+      for (const patch of this.patches) {
+        this._drawPatch(patch);
+      }
+      ctx.restore();
     }
-    curveVertex(this._getPosX(9, PI, 0), this._getPosY(9, PI, 0));
-    for (let i = 9; i >= 0; i--) {
-      curveVertex(this._getPosX(i, -PI / 2, 0), this._getPosY(i, -PI / 2, 0));
-    }
-    curveVertex(this._getPosX(0, -PI / 6, 0), this._getPosY(0, -PI / 6, 0));
-    curveVertex(this._getPosX(0, 0, 4 * s), this._getPosY(0, 0, 4 * s));
-    curveVertex(this._getPosX(0, PI / 6, 0), this._getPosY(0, PI / 6, 0));
-    curveVertex(this._getPosX(0, PI / 2, 0), this._getPosY(0, PI / 2, 0));
-    curveVertex(this._getPosX(1, PI / 2, 0), this._getPosY(1, PI / 2, 0));
-    curveVertex(this._getPosX(2, PI / 2, 0), this._getPosY(2, PI / 2, 0));
-    curveVertex(this._getPosX(3, PI / 2, 0), this._getPosY(3, PI / 2, 0));
-    endShape();
+
+    noFill();
+    stroke(255);
+    strokeWeight(4 * s);
+    this._drawBodyShape();
 
     fill(this.finColor);
 
@@ -272,5 +293,94 @@ export class Goldfish {
     return this.spine.joints[i].y +
            sin(this.spine.angles[i] + angleOffset) *
            (this.bodyWidth[i] + lengthOffset);
+  }
+
+  _drawBodyShape() {
+    beginShape();
+    for (let i = 0; i < 10; i++) {
+      curveVertex(this._getPosX(i, PI / 2, 0), this._getPosY(i, PI / 2, 0));
+    }
+    curveVertex(this._getPosX(9, PI, 0), this._getPosY(9, PI, 0));
+    for (let i = 9; i >= 0; i--) {
+      curveVertex(this._getPosX(i, -PI / 2, 0), this._getPosY(i, -PI / 2, 0));
+    }
+    curveVertex(this._getPosX(0, -PI / 6, 0), this._getPosY(0, -PI / 6, 0));
+    curveVertex(this._getPosX(0, 0, 4 * this.scale), this._getPosY(0, 0, 4 * this.scale));
+    curveVertex(this._getPosX(0, PI / 6, 0), this._getPosY(0, PI / 6, 0));
+    curveVertex(this._getPosX(0, PI / 2, 0), this._getPosY(0, PI / 2, 0));
+    curveVertex(this._getPosX(1, PI / 2, 0), this._getPosY(1, PI / 2, 0));
+    curveVertex(this._getPosX(2, PI / 2, 0), this._getPosY(2, PI / 2, 0));
+    curveVertex(this._getPosX(3, PI / 2, 0), this._getPosY(3, PI / 2, 0));
+    endShape();
+  }
+
+  _buildBodyClipPath(ctx) {
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      pts.push(this._getPosX(i, PI / 2, 0), this._getPosY(i, PI / 2, 0));
+    }
+    pts.push(this._getPosX(9, PI, 0), this._getPosY(9, PI, 0));
+    for (let i = 9; i >= 0; i--) {
+      pts.push(this._getPosX(i, -PI / 2, 0), this._getPosY(i, -PI / 2, 0));
+    }
+    pts.push(this._getPosX(0, -PI / 6, 0), this._getPosY(0, -PI / 6, 0));
+    pts.push(this._getPosX(0, 0, 4 * this.scale), this._getPosY(0, 0, 4 * this.scale));
+    pts.push(this._getPosX(0, PI / 6, 0), this._getPosY(0, PI / 6, 0));
+
+    ctx.beginPath();
+    ctx.moveTo(pts[0], pts[1]);
+    for (let i = 2; i < pts.length; i += 2) {
+      ctx.lineTo(pts[i], pts[i + 1]);
+    }
+    ctx.closePath();
+  }
+
+  _drawPatch(patch) {
+    const j = this.spine.joints;
+    const a = this.spine.angles;
+    const bw = this.bodyWidth;
+    const ji = patch.jointIndex;
+
+    const cx = j[ji].x + cos(a[ji] + PI / 2) * patch.lateralOffset * bw[ji];
+    const cy = j[ji].y + sin(a[ji] + PI / 2) * patch.lateralOffset * bw[ji];
+
+    const rx = patch.lengthRadius * this.linkSize;
+    const ry = patch.widthRadius * bw[ji];
+
+    const angle = a[ji] + patch.rotation;
+
+    fill(this.patchColors[patch.colorIdx]);
+    push();
+    translate(cx, cy);
+    rotate(angle);
+    ellipse(0, 0, rx * 2, ry * 2);
+    pop();
+  }
+
+  _generatePatches(colors, density, seed) {
+    if (!colors || colors.length === 0) return [];
+
+    const countRange = {
+      sparse: [1, 3],
+      normal: [2, 5],
+      dense:  [4, 7],
+    };
+    const [minCount, maxCount] = countRange[density] || countRange.normal;
+
+    const rng = mulberry32(seed * 13 + 37);
+    const count = Math.floor(rng() * (maxCount - minCount + 1)) + minCount;
+
+    const patches = [];
+    for (let i = 0; i < count; i++) {
+      patches.push({
+        jointIndex: Math.floor(rng() * 8) + 1,
+        lateralOffset: (rng() - 0.5) * 1.6,
+        lengthRadius: 1.5 + rng() * 2.0,
+        widthRadius: 0.6 + rng() * 0.6,
+        colorIdx: Math.floor(rng() * colors.length),
+        rotation: (rng() - 0.5) * 0.6,
+      });
+    }
+    return patches;
   }
 }

@@ -35,21 +35,24 @@ export const goldfishConfig = {
     },
     diversity: {
       label: 'Diversity',
-      min: 1, max: 7, step: 1, defaultValue: 7,
+      min: 1, max: 10, step: 1, defaultValue: 7,
       toParam: (v) => v,
       toUI: (v) => v,
     },
   },
 
-  // 7 goldfish-typical color palettes
+  // 7 goldfish-typical color palettes (some with koi-style patches)
   palettes: [
-    { body: [200, 50, 30],   fin: [230, 100, 60] },   // Classic red
-    { body: [220, 130, 40],  fin: [240, 180, 90] },   // Orange
-    { body: [230, 225, 210], fin: [245, 240, 230] },   // White
+    { body: [200, 50, 30],   fin: [230, 100, 60] },                                                                    // Classic red
+    { body: [220, 130, 40],  fin: [240, 180, 90] },                                                                    // Orange
+    { body: [230, 225, 210], fin: [245, 240, 230], patches: [[200, 50, 30]], patchDensity: 'normal' },                  // Kohaku (red-white koi)
+    { body: [200, 60, 40],   fin: [235, 220, 210] },                                                                    // Red-white
+    { body: [230, 225, 210], fin: [240, 235, 220], patches: [[200, 50, 30], [40, 35, 35]], patchDensity: 'normal' },    // Taisho Sanke (white + red/black)
+    { body: [210, 170, 50],  fin: [235, 210, 100] },                                                                    // Gold
     { body: [40, 35, 35],    fin: [70, 60, 60] },      // Black (ink dragon)
-    { body: [200, 60, 40],   fin: [235, 220, 210] },   // Red-white
     { body: [220, 140, 50],  fin: [240, 235, 220] },   // Orange-white
-    { body: [210, 170, 50],  fin: [235, 210, 100] },   // Gold
+    { body: [230, 225, 210], fin: [245, 240, 230] },   // White
+    { body: [40, 35, 35],    fin: [70, 60, 60],    patches: [[200, 50, 30], [230, 225, 210]], patchDensity: 'dense' },  // Showa (black + red/white)
   ],
 
   physics: {
@@ -87,6 +90,13 @@ export const goldfishConfig = {
         const palette = groupState.config.palettes[paletteIdx % groupState.config.palettes.length];
         boid.goldfish.bodyColor = color(palette.body[0], palette.body[1], palette.body[2]);
         boid.goldfish.finColor = color(palette.fin[0], palette.fin[1], palette.fin[2]);
+        if (palette.patches) {
+          boid.goldfish.patches = boid.goldfish._generatePatches(palette.patches, palette.patchDensity, boid.id);
+          boid.goldfish.patchColors = palette.patches.map(c => color(c[0], c[1], c[2]));
+        } else {
+          boid.goldfish.patches = [];
+          boid.goldfish.patchColors = [];
+        }
         break;
       }
     }

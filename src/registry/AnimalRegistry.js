@@ -223,6 +223,12 @@ export class AnimalRegistry {
       const paletteIdx = i % diversity;
       const palette = config.palettes[paletteIdx % config.palettes.length];
 
+      const patchConfig = palette.patches ? {
+        colors: palette.patches,
+        density: palette.patchDensity || 'normal',
+        seed: i,
+      } : null;
+
       groupState.boids.push(new config.BoidClass({
         id: i,
         group: config.group,
@@ -239,6 +245,7 @@ export class AnimalRegistry {
         racism: groupState.sliderValues.racism,
         racismCoefficient: getCoeff() / 100,
         speedIndex: config.physics.speedIndex,
+        patchConfig,
       }));
     }
   }
