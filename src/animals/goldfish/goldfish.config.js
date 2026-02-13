@@ -47,11 +47,11 @@ export const goldfishConfig = {
     { body: [220, 130, 40],  fin: [240, 180, 90] },                                                                    // Orange
     { body: [230, 225, 210], fin: [245, 240, 230], patches: [[200, 50, 30]], patchDensity: 'normal' },                  // Kohaku (red-white koi)
     { body: [200, 60, 40],   fin: [235, 220, 210] },                                                                    // Red-white
-    { body: [230, 225, 210], fin: [240, 235, 220], patches: [[200, 50, 30], [40, 35, 35]], patchDensity: 'normal' },    // Taisho Sanke (white + red/black)
     { body: [210, 170, 50],  fin: [235, 210, 100] },                                                                    // Gold
     { body: [40, 35, 35],    fin: [70, 60, 60] },      // Black (ink dragon)
     { body: [220, 140, 50],  fin: [240, 235, 220] },   // Orange-white
     { body: [230, 225, 210], fin: [245, 240, 230] },   // White
+    { body: [230, 225, 210], fin: [240, 235, 220], patches: [[200, 50, 30], [40, 35, 35]], patchDensity: 'normal' },    // Taisho Sanke (white + red/black)
     { body: [40, 35, 35],    fin: [70, 60, 60],    patches: [[200, 50, 30], [230, 225, 210]], patchDensity: 'dense' },  // Showa (black + red/white)
   ],
 
