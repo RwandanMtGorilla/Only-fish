@@ -73,6 +73,9 @@ window.draw = function () {
   // 更新所有动物 (组内 flock + 跨组 separation + 物理)
   registry.update(grabbedBoid);
 
+  // 食物吸入: 在碰撞检测之前将食物向附近动物移动
+  registry.attractFoods(foods, grabbedBoid);
+
   // 所有组共享的食物碰撞检测
   registry.checkFoodCollisions(foods, grabbedBoid);
 

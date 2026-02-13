@@ -47,6 +47,42 @@ export class FoodItem {
     return this.hp <= 0;
   }
 
+  attract(boids, grabbedBoid) {
+    let closestBoid = null;
+    let closestDist = Infinity;
+
+    for (let i = 0; i < boids.length; i++) {
+      const boid = boids[i];
+      if (boid === grabbedBoid || boid.isGrabbed) continue;
+      if (boid.eatCooldown == null) continue;
+
+      const center = boid.collisionCenter || boid.position;
+      const d = p5.Vector.dist(this.position, center);
+      const attractRange = boid.radius * 3;
+
+      if (d < attractRange && d < closestDist) {
+        closestDist = d;
+        closestBoid = boid;
+      }
+    }
+
+    if (!closestBoid) return;
+
+    const center = closestBoid.collisionCenter || closestBoid.position;
+    const attractRange = closestBoid.radius * 1.6;
+    const t = closestDist / attractRange;
+    const basePull = (1 - t) * (1 - t);
+    const hpFactor = 1.5 / this.hp;
+    const maxPullSpeed = 1.3;
+    const speed = basePull * hpFactor * maxPullSpeed;
+
+    const dir = p5.Vector.sub(center, this.position);
+    if (dir.mag() > 0.1) {
+      dir.normalize().mult(speed);
+      this.position.add(dir);
+    }
+  }
+
   display() {
     const r = this.radius;
     push();

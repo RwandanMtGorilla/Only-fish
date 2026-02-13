@@ -150,6 +150,12 @@ export class AnimalRegistry {
     pop();
   }
 
+  attractFoods(foods, grabbedBoid) {
+    for (let i = 0; i < foods.length; i++) {
+      foods[i].attract(this._allBoids, grabbedBoid);
+    }
+  }
+
   /**
    * 所有组共享的食物碰撞检测
    * @param {Array} foods - 食物列表
