@@ -19,7 +19,7 @@ export class Goldfish {
 
     // 14 segments: 10 body + 4 tail (more tail joints for tri-lobe fin)
     this.linkSize = Math.round(48 * scale);
-    this.spine = new Chain(origin, 14, this.linkSize, PI / 6);
+    this.spine = new Chain(origin, 15, this.linkSize, PI / 6);
 
     this.bodyColor = bodyColor || color(200, 80, 40);
     this.finColor = finColor || color(230, 140, 80);
@@ -103,8 +103,8 @@ export class Goldfish {
     const headToTail = headToMid1 + relativeAngleDiff(a[6], a[13]);
 
     // === PECTORAL FINS (IK chain-driven, flowing) ===
-    this._drawPecFin(this.leftPecFin);
-    this._drawPecFin(this.rightPecFin);
+    this._drawPecFin(this.leftPecFin, 1);   // left: inner side is +PI/2
+    this._drawPecFin(this.rightPecFin, -1); // right: inner side is -PI/2
 
     // === VENTRAL FINS ===
     push();
@@ -169,24 +169,28 @@ export class Goldfish {
    * Draw a pectoral fin using its IK chain joints.
    * Renders a flowing ribbon shape along the chain's joints.
    * @param {Chain} finChain - The pectoral fin IK chain
+   * @param {number} side - 1 for left fin (inner side = +PI/2), -1 for right fin (inner side = -PI/2)
    */
-  _drawPecFin(finChain) {
+  _drawPecFin(finChain, side) {
     const fj = finChain.joints;
     const fa = finChain.angles;
     const fw = this.finWidths;
-    // Shift the inner-side root toward the head so the fin attaches further forward
+    // Shift the inner-side (body-facing) root toward the head
     const rootShift = this.scale * 30;
+    // Inner side angle offset: left fin's inner is +PI/2, right fin's inner is -PI/2
+    const innerAngle = side * PI / 2;
+    const outerAngle = -innerAngle;
     beginShape();
     // Outer edge
     for (let i = 0; i < fj.length; i++) {
-      curveVertex(fj[i].x + cos(fa[i] + PI / 2) * fw[i],
-                  fj[i].y + sin(fa[i] + PI / 2) * fw[i]);
+      curveVertex(fj[i].x + cos(fa[i] + outerAngle) * fw[i],
+                  fj[i].y + sin(fa[i] + outerAngle) * fw[i]);
     }
     // Inner edge (reversed), root joints shifted forward along spine direction
     for (let i = fj.length - 1; i >= 0; i--) {
       const shift = i < 3 ? rootShift * (1 - i * 0.3) : 0;
-      curveVertex(fj[i].x + cos(fa[i] - PI / 2) * fw[i] - cos(fa[i]) * shift,
-                  fj[i].y + sin(fa[i] - PI / 2) * fw[i] - sin(fa[i]) * shift);
+      curveVertex(fj[i].x + cos(fa[i] + innerAngle) * fw[i] - cos(fa[i]) * shift,
+                  fj[i].y + sin(fa[i] + innerAngle) * fw[i] - sin(fa[i]) * shift);
     }
     endShape(CLOSE);
   }
@@ -209,57 +213,43 @@ export class Goldfish {
    */
   _drawFinLobe(j, a, headToTail, s, sideAngle, widthScale, tipExtend) {
     const startJoint = 9;
-    const endJoint = 13;
+    const endJoint = 14;
     const jointCount = endJoint - startJoint + 1;
 
     // --- Compute offset centerline positions for this lobe ---
     // Base spread: constant lateral distance between forks
-    const baseSpread = 28 * s;
+    const baseSpread = 35 * s;
     // Dynamic spread: body curvature opens / closes the fan
-    const dynamicSpread = constrain(headToTail * 18 * s, -40 * s, 40 * s);
-    const maxSpread = baseSpread + abs(dynamicSpread) * 0.5;
+    const dynamicSpread = constrain(headToTail * 25 * s, -90 * s, 90 * s);
+    const maxSpread = baseSpread + abs(dynamicSpread) * 0.7;
 
     // Pre-compute offset joint positions along the lobe centerline
+    // Last joint gets extra forward extension via tipExtend
     const cx = [];
     const cy = [];
     for (let i = 0; i < jointCount; i++) {
       const ji = startJoint + i;
-      // t goes 0 -> 1 from base to tip
       const t = i / (jointCount - 1);
-      // Lateral offset grows quadratically toward the tip
       const spread = sideAngle * maxSpread * t * t;
-      // Perpendicular to spine direction at this joint
       const perpAngle = a[ji] + PI / 2;
-      cx.push(j[ji].x + cos(perpAngle) * spread);
-      cy.push(j[ji].y + sin(perpAngle) * spread);
+      const extend = (i === jointCount - 1) ? tipExtend : 0;
+      cx.push(j[ji].x + cos(perpAngle) * spread + cos(a[ji]) * extend);
+      cy.push(j[ji].y + sin(perpAngle) * spread + sin(a[ji]) * extend);
     }
 
-    // Lobe half-width profile: spindle shape (sin), narrow at base & tip
+    // Lobe half-width profile: sin curve that doesn't fully close at the tip
     const halfWidths = [];
     for (let i = 0; i < jointCount; i++) {
       const t = i / (jointCount - 1);
-      halfWidths.push(sin(t * PI) * 16 * s * widthScale);
+      halfWidths.push(sin(t * 0.8 * PI) * 16 * s * widthScale);
     }
 
-    // Tip point: extend beyond last offset joint along spine direction
-    const lastIdx = jointCount - 1;
-    const lastJi = endJoint;
-    const tipSpread = sideAngle * maxSpread * 1.15; // slightly beyond quadratic
-    const tipPerpAngle = a[lastJi] + PI / 2;
-    const tipX = j[lastJi].x + cos(a[lastJi]) * tipExtend + cos(tipPerpAngle) * tipSpread;
-    const tipY = j[lastJi].y + sin(a[lastJi]) * tipExtend + sin(tipPerpAngle) * tipSpread;
-
     beginShape();
-    // One side of the lobe
     for (let i = 0; i < jointCount; i++) {
       const perpAngle = a[startJoint + i] + PI / 2;
       curveVertex(cx[i] + cos(perpAngle) * halfWidths[i],
                   cy[i] + sin(perpAngle) * halfWidths[i]);
     }
-    // Tip
-    curveVertex(tipX, tipY);
-    curveVertex(tipX, tipY);
-    // Other side, reversed
     for (let i = jointCount - 1; i >= 0; i--) {
       const perpAngle = a[startJoint + i] - PI / 2;
       curveVertex(cx[i] + cos(perpAngle) * halfWidths[i],
