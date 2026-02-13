@@ -24,9 +24,7 @@ export class Turtle {
     this.arms = [];
     this.armDesired = [];
     for (let i = 0; i < 4; i++) {
-      const legSize = i < 2
-        ? Math.round(36 * scale)
-        : [Math.round(30 * scale), Math.round(40 * scale)];
+      const legSize = [Math.round(30 * scale), Math.round(40 * scale)];
       this.arms.push(new Chain(origin, 3, legSize));
       this.armDesired.push(createVector(0, 0));
     }
