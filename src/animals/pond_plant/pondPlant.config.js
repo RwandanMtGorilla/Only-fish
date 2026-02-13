@@ -8,46 +8,9 @@ import { LilypadBoid } from '../lilypad/LilypadBoid.js';
 import { LotusCenterBoid } from '../lotus/LotusCenterBoid.js';
 import { PetalBoid } from '../lotus/PetalBoid.js';
 import { gaussian } from '../../utils/gaussian.js';
-
-// Petal layer definitions: inner to outer
-const PETAL_LAYERS = [
-  { count: 5, distance: 18, size: 0.83 },
-  { count: 8, distance: 20, size: 0.92 },
-  { count: 13, distance: 22, size: 1.0 },
-];
-
-// Lilypad palettes: body = leaf surface, fin = vein color
-const LILYPAD_PALETTES = [
-  { body: [60, 140, 60],  fin: [35, 100, 35] },
-  { body: [50, 120, 55],  fin: [30, 85, 30] },
-  { body: [75, 150, 65],  fin: [45, 110, 40] },
-  { body: [55, 125, 70],  fin: [32, 90, 45] },
-  { body: [80, 140, 50],  fin: [50, 100, 30] },
-];
-
-// Lotus palettes: body = seed pod, fin = stamen, petal/petalEdge = petal colors
-const LOTUS_PALETTES = [
-  {
-    body: [180, 200, 120], fin: [220, 200, 80],
-    petal: [255, 182, 193], petalEdge: [230, 140, 160],
-  },
-  {
-    body: [190, 210, 130], fin: [230, 210, 90],
-    petal: [255, 240, 245], petalEdge: [240, 200, 210],
-  },
-  {
-    body: [170, 190, 110], fin: [210, 190, 70],
-    petal: [255, 200, 210], petalEdge: [220, 150, 170],
-  },
-  {
-    body: [185, 205, 125], fin: [225, 205, 85],
-    petal: [255, 220, 230], petalEdge: [235, 180, 195],
-  },
-  {
-    body: [175, 195, 115], fin: [215, 195, 75],
-    petal: [255, 250, 250], petalEdge: [240, 230, 230],
-  },
-];
+import { LILYPAD_PALETTES } from '../lilypad/lilypadPalettes.js';
+import { LOTUS_PALETTES, PETAL_LAYERS } from '../lotus/lotusPalettes.js';
+import { PLANT_SLIDERS, PLANT_PHYSICS, PLANT_COEFFICIENTS, applyCommonPlantSlider } from './plantDefaults.js';
 
 export const pondPlantConfig = {
   group: 'pond_plant',
@@ -58,44 +21,10 @@ export const pondPlantConfig = {
 
   scaleRange: { min: 0.4, max: 0.95 },  // Lilypad scale range (lotus uses its own)
 
-  sliders: {
-    introversion: {
-      label: 'Introversion',
-      min: 0, max: 20, step: 1, defaultValue: 10,
-      toParam: (v) => v / 10,
-      toUI: (v) => Math.round(v * 10),
-    },
-    speed: {
-      label: 'Speed',
-      min: 0, max: 20, step: 1, defaultValue: 1,
-      toParam: (v) => v / 10 + 0.5,
-      toUI: (v) => Math.round((v - 0.5) * 10),
-    },
-    racism: {
-      label: 'Racism',
-      min: 0, max: 20, step: 1, defaultValue: 0,
-      toParam: (v) => v / 5,
-      toUI: (v) => Math.round(v * 5),
-    },
-    diversity: {
-      label: 'Diversity',
-      min: 1, max: 5, step: 1, defaultValue: 3,
-      toParam: (v) => v,
-      toUI: (v) => v,
-    },
-  },
-
+  sliders: PLANT_SLIDERS,
   palettes: LILYPAD_PALETTES,  // Nominal; customCreateBoids picks from separate palette arrays
-
-  physics: {
-    speedIndex: 0.05,
-    maxForce: 0.02,
-  },
-
-  coefficients: {
-    general: { mean: 50, stdev: 5 },
-    quickness: { mean: 50, stdev: 5 },
-  },
+  physics: PLANT_PHYSICS,
+  coefficients: PLANT_COEFFICIENTS,
 
   /**
    * Combined creation: lilypads (cluster-spawned) + lotus (center + petals)
@@ -235,33 +164,23 @@ export const pondPlantConfig = {
   },
 
   applySliderValue(boid, key, paramValue, groupState) {
-    switch (key) {
-      case 'introversion':
-        boid.introversion = paramValue * boid.introversionCoefficient;
-        break;
-      case 'speed':
-        boid.quickness = paramValue * boid.quicknessCoefficient;
-        break;
-      case 'racism':
-        boid.racism = paramValue * boid.racismCoefficient;
-        break;
-      case 'diversity': {
-        const paletteIdx = boid.id % paramValue;
-        boid.colorId = paletteIdx;
-        if (boid.isLilypad) {
-          const palette = LILYPAD_PALETTES[paletteIdx % LILYPAD_PALETTES.length];
-          boid.lilypad.bodyColor = color(palette.body[0], palette.body[1], palette.body[2]);
-          boid.lilypad.veinColor = color(palette.fin[0], palette.fin[1], palette.fin[2]);
-        } else if (boid.isCenter) {
-          const palette = LOTUS_PALETTES[paletteIdx % LOTUS_PALETTES.length];
-          boid.renderer.centerColor = color(palette.body[0], palette.body[1], palette.body[2]);
-          boid.renderer.stamenColor = color(palette.fin[0], palette.fin[1], palette.fin[2]);
-        } else if (boid.isPetal) {
-          const palette = LOTUS_PALETTES[paletteIdx % LOTUS_PALETTES.length];
-          boid.petal.petalColor = color(palette.petal[0], palette.petal[1], palette.petal[2]);
-          boid.petal.petalEdgeColor = color(palette.petalEdge[0], palette.petalEdge[1], palette.petalEdge[2]);
-        }
-        break;
+    if (applyCommonPlantSlider(boid, key, paramValue)) return;
+
+    if (key === 'diversity') {
+      const paletteIdx = boid.id % paramValue;
+      boid.colorId = paletteIdx;
+      if (boid.isLilypad) {
+        const palette = LILYPAD_PALETTES[paletteIdx % LILYPAD_PALETTES.length];
+        boid.lilypad.bodyColor = color(palette.body[0], palette.body[1], palette.body[2]);
+        boid.lilypad.veinColor = color(palette.fin[0], palette.fin[1], palette.fin[2]);
+      } else if (boid.isCenter) {
+        const palette = LOTUS_PALETTES[paletteIdx % LOTUS_PALETTES.length];
+        boid.renderer.centerColor = color(palette.body[0], palette.body[1], palette.body[2]);
+        boid.renderer.stamenColor = color(palette.fin[0], palette.fin[1], palette.fin[2]);
+      } else if (boid.isPetal) {
+        const palette = LOTUS_PALETTES[paletteIdx % LOTUS_PALETTES.length];
+        boid.petal.petalColor = color(palette.petal[0], palette.petal[1], palette.petal[2]);
+        boid.petal.petalEdgeColor = color(palette.petalEdge[0], palette.petalEdge[1], palette.petalEdge[2]);
       }
     }
   },
