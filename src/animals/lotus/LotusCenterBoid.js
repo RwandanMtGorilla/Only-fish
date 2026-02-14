@@ -34,7 +34,6 @@ export class LotusCenterBoid {
 
     // Collision radii
     this.radius = this.scale * 50;
-    this.stemRadius = this.scale * 7;
     this.hitRadius = this.scale * 40;
 
     // Heavy mass (hard to push)
@@ -47,7 +46,7 @@ export class LotusCenterBoid {
 
     // Spring anchor
     this.anchor = this.position.copy();
-    this.springK = 0.01;
+    this.springK = 0.015;
 
     // Petals managed by this center (filled by customCreateBoids)
     this.petals = [];
@@ -114,7 +113,7 @@ export class LotusCenterBoid {
       if (other === this) continue;
       if (other.group === ownGroup) continue;
       const otherCenter = other.collisionCenter || other.position;
-      const desiredSep = this.stemRadius + other.radius + 30;
+      const desiredSep = this.radius + other.radius + 30;
       const sep = p5.Vector.dist(this.position, otherCenter);
       if (sep > 0 && sep < desiredSep) {
         const diff = p5.Vector.sub(this.position, otherCenter).normalize().div(sep);
