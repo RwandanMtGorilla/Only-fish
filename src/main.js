@@ -13,6 +13,7 @@ import { fishConfig } from './animals/fish/fish.config.js';
 import { turtleConfig } from './animals/turtle/turtle.config.js';
 import { goldfishConfig } from './animals/goldfish/goldfish.config.js';
 import { pondPlantConfig } from './animals/pond_plant/pondPlant.config.js';
+import { shrimpConfig } from './animals/shrimp/shrimp.config.js';//虾米
 
 // === 全局状态 ===
 const registry = new AnimalRegistry();
@@ -44,6 +45,7 @@ registry.register(fishConfig);
 registry.register(turtleConfig);
 registry.register(goldfishConfig);
 registry.register(pondPlantConfig);
+registry.register(shrimpConfig);
 
 // === p5.js Lifecycle ===
 
