@@ -8,6 +8,78 @@
 const BoidPhysics = {
 
   /**
+   * 记录当前速度快照，供带反应延迟的 Alignment 查询。
+   * 仅配置了 reactionDelayMs 的动物会保存历史。
+   * @param {number} timestamp - 当前模拟时间 (ms)
+   */
+  recordVelocitySample(timestamp) {
+    if (!Number.isFinite(this.reactionDelayMs)) return;
+
+    if (!this.velocityHistory) {
+      this.velocityHistory = [];
+    }
+
+    const sample = {
+      timestamp,
+      x: this.velocity.x,
+      y: this.velocity.y,
+    };
+    const last = this.velocityHistory[this.velocityHistory.length - 1];
+
+    // 极高帧率下 millis() 可能在连续两帧返回相同值，覆盖即可。
+    if (last && last.timestamp === timestamp) {
+      this.velocityHistory[this.velocityHistory.length - 1] = sample;
+    } else {
+      this.velocityHistory.push(sample);
+    }
+
+    // 保留目标时刻之前的最后一个样本，以及之后用于插值的样本。
+    const targetTimestamp = timestamp - Math.max(0, this.reactionDelayMs);
+    while (this.velocityHistory.length > 2 &&
+           this.velocityHistory[1].timestamp <= targetTimestamp) {
+      this.velocityHistory.shift();
+    }
+  },
+
+  /**
+   * 获取指定时刻的速度。目标位于两个样本之间时做线性插值。
+   * @param {number} targetTimestamp - 目标模拟时间 (ms)
+   * @returns {p5.Vector}
+   */
+  getVelocityAt(targetTimestamp) {
+    const history = this.velocityHistory;
+    if (!history || history.length === 0) {
+      return this.velocity.copy();
+    }
+
+    if (targetTimestamp <= history[0].timestamp) {
+      return createVector(history[0].x, history[0].y);
+    }
+
+    const last = history[history.length - 1];
+    if (targetTimestamp >= last.timestamp) {
+      return createVector(last.x, last.y);
+    }
+
+    for (let i = 1; i < history.length; i++) {
+      const next = history[i];
+      if (next.timestamp < targetTimestamp) continue;
+
+      const previous = history[i - 1];
+      const duration = next.timestamp - previous.timestamp;
+      const amount = duration > 0
+        ? (targetTimestamp - previous.timestamp) / duration
+        : 0;
+      return createVector(
+        previous.x + (next.x - previous.x) * amount,
+        previous.y + (next.y - previous.y) * amount
+      );
+    }
+
+    return createVector(last.x, last.y);
+  },
+
+  /**
    * Seek 目标位置, 含到达减速
    * @param {p5.Vector} target
    * @returns {p5.Vector} 转向力

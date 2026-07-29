@@ -123,9 +123,9 @@ draw()
 
 Your boid class must implement:
 
-- **Constructor** accepting a config object with: `id, group, x, y, scale, bodyColor, finColor, colorId, introversion, introversionCoefficient, quickness, quicknessCoefficient, racism, racismCoefficient, speedIndex`
+- **Constructor** accepting a config object with: `id, group, x, y, scale, bodyColor, finColor, colorId, introversion, introversionCoefficient, quickness, quicknessCoefficient, racism, racismCoefficient, speedIndex, reactionDelayMs`
 - **Instance properties**: `position, velocity, maxSpeed, maxForce, radius, mass, group, isGrabbed`
-- **Methods**: `flock(sameGroupBoids, settings)`, `physicsUpdate(sameGroupBoids, settings)`, `display()`, `resolveRenderPosition()`
+- **Methods**: `flock(sameGroupBoids, settings, updateTime)`, `physicsUpdate(sameGroupBoids, settings)`, `display()`, `resolveRenderPosition()`
 - Optional eating: define `lastEatTime` and `eatCooldown` to participate in food consumption
 
 ## Tech Stack

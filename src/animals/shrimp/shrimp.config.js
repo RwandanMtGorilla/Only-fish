@@ -53,6 +53,7 @@ export const shrimpConfig = {
   physics: {
     speedIndex: 2.5,
     maxForce: 0.2,
+    reactionDelayMs: 250,
   },
 
   coefficients: {

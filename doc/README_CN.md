@@ -123,9 +123,9 @@ draw()
 
 你的 Boid 类需要实现：
 
-- **构造函数** 接受配置对象，包含：`id, group, x, y, scale, bodyColor, finColor, colorId, introversion, introversionCoefficient, quickness, quicknessCoefficient, racism, racismCoefficient, speedIndex`
+- **构造函数** 接受配置对象，包含：`id, group, x, y, scale, bodyColor, finColor, colorId, introversion, introversionCoefficient, quickness, quicknessCoefficient, racism, racismCoefficient, speedIndex, reactionDelayMs`
 - **实例属性**：`position, velocity, maxSpeed, maxForce, radius, mass, group, isGrabbed`
-- **方法**：`flock(sameGroupBoids, settings)`、`physicsUpdate(sameGroupBoids, settings)`、`display()`、`resolveRenderPosition()`
+- **方法**：`flock(sameGroupBoids, settings, updateTime)`、`physicsUpdate(sameGroupBoids, settings)`、`display()`、`resolveRenderPosition()`
 - 可选进食功能：定义 `lastEatTime` 和 `eatCooldown` 即可参与食物消耗
 
 ## 技术栈

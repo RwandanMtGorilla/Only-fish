@@ -27,6 +27,7 @@ export class ShrimpBoid {
    * @param {number} config.racism - 基础颜色分离值
    * @param {number} config.racismCoefficient - 个体颜色分离系数
    * @param {number} config.speedIndex - 基础速度因子
+   * @param {number} config.reactionDelayMs - 速度同步反应延迟（毫秒）
    */
   constructor(config) {
     this.id = config.id;
@@ -49,6 +50,8 @@ export class ShrimpBoid {
     this.speedIndex = config.speedIndex;
     this.maxSpeed = this.speedIndex * this.quickness * 0.7; // 虾的速度是鱼的70%
     this.maxForce = 0.2; // 鱼是0.3，虾的转向力更小（更笨拙）
+    this.reactionDelayMs = Math.max(0, config.reactionDelayMs ?? 0);
+    this.velocityHistory = [];
 
     // 【关键修改3：虾的有效半径（体型更小）】
     this.radius = this.scale * 120; // 鱼是scale*200，虾的碰撞/躲避半径更小
@@ -114,8 +117,9 @@ export class ShrimpBoid {
   /**
    * Alignment: 趋向附近boid的平均速度方向（和鱼逻辑一致）
    */
-  align(allBoids) {
+  align(allBoids, updateTime = millis()) {
     const neighborDist = 250; // 鱼是300，虾的感知范围更小
+    const targetTime = updateTime - this.reactionDelayMs;
     const sum = createVector(0, 0);
     let count = 0;
     for (let i = 0; i < allBoids.length; i++) {
@@ -123,7 +127,7 @@ export class ShrimpBoid {
       if (allBoids[i].isGrabbed) continue;
       const dist = p5.Vector.dist(this.position, allBoids[i].position);
       if (dist > 0 && dist < neighborDist) {
-        sum.add(allBoids[i].velocity);
+        sum.add(allBoids[i].getVelocityAt(targetTime));
         count++;
       }
     }
@@ -167,8 +171,8 @@ export class ShrimpBoid {
    * @param {Array} sameGroupBoids - 同组的boid列表
    * @param {Object} settings - 全局设置
    */
-  flock(sameGroupBoids, settings) {
-    const alignForce = this.align(sameGroupBoids);
+  flock(sameGroupBoids, settings, updateTime = millis()) {
+    const alignForce = this.align(sameGroupBoids, updateTime);
     const separateForce = this.separate(sameGroupBoids);
     const cohesionForce = this.cohesion(sameGroupBoids);
 

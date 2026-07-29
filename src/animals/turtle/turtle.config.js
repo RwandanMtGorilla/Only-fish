@@ -65,6 +65,7 @@ export const turtleConfig = {
   physics: {
     speedIndex: 1.8,
     maxForce: 0.15,
+    reactionDelayMs: 350,
   },
 
   // 高斯系数生成器配置

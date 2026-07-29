@@ -26,6 +26,7 @@ export class TurtleBoid {
    * @param {number} config.racism
    * @param {number} config.racismCoefficient
    * @param {number} config.speedIndex
+   * @param {number} config.reactionDelayMs
    */
   constructor(config) {
     this.id = config.id;
@@ -48,6 +49,8 @@ export class TurtleBoid {
     this.speedIndex = config.speedIndex;
     this.maxSpeed = this.speedIndex * this.quickness;
     this.maxForce = 0.15;
+    this.reactionDelayMs = Math.max(0, config.reactionDelayMs ?? 0);
+    this.velocityHistory = [];
 
     // 有效半径 (乌龟带壳更大)
     this.radius = this.scale * 210;
@@ -129,8 +132,9 @@ export class TurtleBoid {
   /**
    * Alignment: 趋向附近 boid 的平均速度方向
    */
-  align(allBoids) {
+  align(allBoids, updateTime = millis()) {
     const neighborDist = 400;
+    const targetTime = updateTime - this.reactionDelayMs;
     const sum = createVector(0, 0);
     let count = 0;
     for (let i = 0; i < allBoids.length; i++) {
@@ -138,7 +142,7 @@ export class TurtleBoid {
       if (allBoids[i].isGrabbed) continue;
       const dist = p5.Vector.dist(this.position, allBoids[i].position);
       if (dist > 0 && dist < neighborDist) {
-        sum.add(allBoids[i].velocity);
+        sum.add(allBoids[i].getVelocityAt(targetTime));
         count++;
       }
     }
@@ -179,8 +183,8 @@ export class TurtleBoid {
   /**
    * 计算并施加所有群体行为力 (组内)
    */
-  flock(sameGroupBoids, settings) {
-    const alignForce = this.align(sameGroupBoids);
+  flock(sameGroupBoids, settings, updateTime = millis()) {
+    const alignForce = this.align(sameGroupBoids, updateTime);
     const separateForce = this.separate(sameGroupBoids);
     const cohesionForce = this.cohesion(sameGroupBoids);
 

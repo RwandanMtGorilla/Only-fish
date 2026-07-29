@@ -25,6 +25,7 @@ export class GoldfishBoid {
    * @param {number} config.racism - Base color-separation value
    * @param {number} config.racismCoefficient - Individual racism multiplier
    * @param {number} config.speedIndex - Base speed factor
+   * @param {number} config.reactionDelayMs - Alignment reaction delay in milliseconds
    */
   constructor(config) {
     this.id = config.id;
@@ -46,6 +47,8 @@ export class GoldfishBoid {
     this.speedIndex = config.speedIndex;
     this.maxSpeed = this.speedIndex * this.quickness;
     this.maxForce = 0.35;
+    this.reactionDelayMs = Math.max(0, config.reactionDelayMs ?? 0);
+    this.velocityHistory = [];
 
     // Smaller interaction radius
     this.radius = this.scale * 160;
@@ -110,8 +113,9 @@ export class GoldfishBoid {
   /**
    * Alignment: match nearby boids' heading
    */
-  align(allBoids) {
+  align(allBoids, updateTime = millis()) {
     const neighborDist = 250;
+    const targetTime = updateTime - this.reactionDelayMs;
     const sum = createVector(0, 0);
     let count = 0;
     for (let i = 0; i < allBoids.length; i++) {
@@ -119,7 +123,7 @@ export class GoldfishBoid {
       if (allBoids[i].isGrabbed) continue;
       const dist = p5.Vector.dist(this.position, allBoids[i].position);
       if (dist > 0 && dist < neighborDist) {
-        sum.add(allBoids[i].velocity);
+        sum.add(allBoids[i].getVelocityAt(targetTime));
         count++;
       }
     }
@@ -160,8 +164,8 @@ export class GoldfishBoid {
   /**
    * Apply all flocking forces (within group)
    */
-  flock(sameGroupBoids, settings) {
-    const alignForce = this.align(sameGroupBoids);
+  flock(sameGroupBoids, settings, updateTime = millis()) {
+    const alignForce = this.align(sameGroupBoids, updateTime);
     const separateForce = this.separate(sameGroupBoids);
     const cohesionForce = this.cohesion(sameGroupBoids);
 

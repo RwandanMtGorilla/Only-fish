@@ -58,6 +58,7 @@ export const goldfishConfig = {
   physics: {
     speedIndex: 3.6,
     maxForce: 0.35,
+    reactionDelayMs: 120,
   },
 
   coefficients: {

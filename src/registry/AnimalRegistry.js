@@ -117,12 +117,22 @@ export class AnimalRegistry {
    */
   update(grabbedBoid) {
     const hasMultipleGroups = this.groups.size > 1;
+    const updateTime = millis();
+
+    // 在更新任何 boid 前统一采样，避免遍历顺序造成帧内历史偏差。
+    for (const boid of this._allBoids) {
+      if (boid.isDead) continue;
+      if (typeof boid.recordVelocitySample === 'function') {
+        boid.recordVelocitySample(updateTime);
+      }
+    }
+
     for (const [group, gs] of this.groups) {
       for (const boid of gs.boids) {
         if (boid === grabbedBoid) continue;
         if (boid.isDead) continue;
         // 组内完整 flock
-        boid.flock(gs.boids, this.settings);
+        boid.flock(gs.boids, this.settings, updateTime);
         // 跨组 separation (仅在有多组时)
         if (hasMultipleGroups) {
           boid.separateFromOthers(this._allBoids, group);
@@ -285,6 +295,7 @@ export class AnimalRegistry {
         racism: groupState.sliderValues.racism,
         racismCoefficient: getCoeff() / 100,
         speedIndex: config.physics.speedIndex,
+        reactionDelayMs: config.physics.reactionDelayMs,
         patchConfig,
       }));
     }

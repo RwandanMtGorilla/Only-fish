@@ -63,6 +63,7 @@ export const fishConfig = {
   physics: {
     speedIndex: 3.1,
     maxForce: 0.3,
+    reactionDelayMs: 150,
   },
 
   // 高斯系数生成器配置
