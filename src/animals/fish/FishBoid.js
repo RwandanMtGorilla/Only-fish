@@ -61,7 +61,13 @@ export class FishBoid {
     this.velocity = p5.Vector.fromAngle(angle).mult(this.maxSpeed * 0.5);
 
     // 渲染实例
-    this.fish = new Fish(this.position.copy(), this.scale, config.bodyColor, config.finColor);
+    this.fish = new Fish(
+      this.position.copy(),
+      this.scale,
+      config.bodyColor,
+      config.finColor,
+      this.velocity.heading(),
+    );
 
     // 抓取状态 (由外部设置)
     this.isGrabbed = false;
@@ -216,14 +222,16 @@ export class FishBoid {
     if (settings.collisions) this.detectCollision(sameGroupBoids);
     this.edgeCheck(settings.walls, settings.canvasW, settings.canvasH);
     // 驱动 IK 鱼体动画, 必须传 copy
-    this.fish.resolveToPosition(this.position.copy());
+    const dt = Math.min(deltaTime / 1000, 0.05);
+    this.fish.resolveToPosition(this.position.copy(), this.velocity, dt);
   }
 
   /**
    * 仅更新渲染位置 (不做 flock/碰撞, 用于被抓取时)
    */
   resolveRenderPosition() {
-    this.fish.resolveToPosition(this.position.copy());
+    const dt = Math.min(deltaTime / 1000, 0.05);
+    this.fish.resolveToPosition(this.position.copy(), this.velocity, dt);
   }
 
   /**

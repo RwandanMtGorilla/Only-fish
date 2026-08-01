@@ -4,8 +4,7 @@
  * @module animals/fish/Fish
  */
 
-import { Chain } from '../../core/Chain.js';
-import { relativeAngleDiff } from '../../utils/geometry.js';
+import { FishLocomotion } from '../../core/FishLocomotion.js';
 
 export class Fish {
   /**
@@ -14,12 +13,21 @@ export class Fish {
    * @param {p5.Color} bodyColor - Body fill color
    * @param {p5.Color} finColor - Fin fill color
    */
-  constructor(origin, scale = 1.0, bodyColor = null, finColor = null) {
+  constructor(origin, scale = 1.0, bodyColor = null, finColor = null, heading = 0) {
     this.scale = scale;
 
     // Scaled spine: 12 segments, first 10 for body, last 2 for caudal fin
     this.linkSize = Math.round(64 * scale);
-    this.spine = new Chain(origin, 12, this.linkSize, PI / 8);
+    this.locomotion = new FishLocomotion(origin, 12, this.linkSize, heading, {
+      maxBend: PI / 6,
+      gait: {
+        beta: 0.88 + random(-0.025, 0.025),
+        waveNum: 0.65 + random(-0.04, 0.04),
+        tipAmpMax: 0.10 + random(-0.008, 0.008),
+      },
+      spine: { tailLimp: 0.40 },
+    });
+    this.spine = this.locomotion.spine;
 
     this.bodyColor = bodyColor || color(58, 124, 165);
     this.finColor = finColor || color(129, 195, 215);
@@ -32,8 +40,8 @@ export class Fish {
    * Drive the fish spine to a new head position (called by FishBoid)
    * @param {p5.Vector} pos - New head position
    */
-  resolveToPosition(pos) {
-    this.spine.resolve(pos);
+  resolveToPosition(pos, velocity, dt) {
+    this.locomotion.update(pos, velocity, dt);
   }
 
   /**
@@ -42,11 +50,7 @@ export class Fish {
    * @param {number} headingAngle - Direction the fish is facing (radians)
    */
   resetSpine(pos, headingAngle) {
-    for (let i = 0; i < this.spine.joints.length; i++) {
-      this.spine.joints[i].x = pos.x - cos(headingAngle) * this.linkSize * i;
-      this.spine.joints[i].y = pos.y - sin(headingAngle) * this.linkSize * i;
-      this.spine.angles[i] = headingAngle;
-    }
+    this.locomotion.reset(pos, headingAngle);
   }
 
   /**
@@ -61,20 +65,22 @@ export class Fish {
     const j = this.spine.joints;
     const a = this.spine.angles;
 
-    const headToMid1 = relativeAngleDiff(a[0], a[6]);
-    const headToMid2 = relativeAngleDiff(a[0], a[7]);
-    const headToTail = headToMid1 + relativeAngleDiff(a[6], a[11]);
+    const headToMid1 = a[6] - a[0];
+    const headToMid2 = a[7] - a[0];
+    const headToTail = this.spine.headToTail;
 
     // === PECTORAL FINS ===
     push();
     translate(this._getPosX(3, PI / 3, 0), this._getPosY(3, PI / 3, 0));
-    rotate(a[2] - PI / 4);
-    ellipse(0, 0, 160 * s, 64 * s);
+    const pectoralFlare = PI / 4 + this.locomotion.brake * PI / 5;
+    const pectoralLength = 160 * s * (0.72 + 0.42 * this.locomotion.brake);
+    rotate(a[2] - pectoralFlare);
+    ellipse(0, 0, pectoralLength, 64 * s);
     pop();
     push();
     translate(this._getPosX(3, -PI / 3, 0), this._getPosY(3, -PI / 3, 0));
-    rotate(a[2] + PI / 4);
-    ellipse(0, 0, 160 * s, 64 * s);
+    rotate(a[2] + pectoralFlare);
+    ellipse(0, 0, pectoralLength, 64 * s);
     pop();
 
     // === VENTRAL FINS ===
@@ -91,13 +97,20 @@ export class Fish {
 
     // === CAUDAL FIN ===
     beginShape();
+    const finAngles = this.spine.finAngles;
+    const finSpan = 0.16 * this.locomotion.bodyLength;
+    const finCamber = 0.055 * this.locomotion.bodyLength;
     for (let i = 8; i < 12; i++) {
-      const tailWidth = 1.5 * headToTail * (i - 8) * (i - 8);
-      curveVertex(j[i].x + cos(a[i] - PI / 2) * tailWidth, j[i].y + sin(a[i] - PI / 2) * tailWidth);
+      const t = (i - 8) / 3;
+      const tailWidth = max(2 * s, finSpan * pow(t, 1.3) + finCamber * headToTail * t * t);
+      curveVertex(j[i].x + cos(finAngles[i] - PI / 2) * tailWidth,
+                  j[i].y + sin(finAngles[i] - PI / 2) * tailWidth);
     }
     for (let i = 11; i >= 8; i--) {
-      const tailWidth = max(-13 * s, min(13 * s, headToTail * 6));
-      curveVertex(j[i].x + cos(a[i] + PI / 2) * tailWidth, j[i].y + sin(a[i] + PI / 2) * tailWidth);
+      const t = (i - 8) / 3;
+      const tailWidth = max(2 * s, finSpan * pow(t, 1.3) - finCamber * headToTail * t * t);
+      curveVertex(j[i].x + cos(finAngles[i] + PI / 2) * tailWidth,
+                  j[i].y + sin(finAngles[i] + PI / 2) * tailWidth);
     }
     endShape(CLOSE);
 
@@ -128,10 +141,10 @@ export class Fish {
     vertex(j[4].x, j[4].y);
     bezierVertex(j[5].x, j[5].y, j[6].x, j[6].y, j[7].x, j[7].y);
     bezierVertex(
-      j[6].x + cos(a[6] + PI / 2) * headToMid2 * 16 * s,
-      j[6].y + sin(a[6] + PI / 2) * headToMid2 * 16 * s,
-      j[5].x + cos(a[5] + PI / 2) * headToMid1 * 16 * s,
-      j[5].y + sin(a[5] + PI / 2) * headToMid1 * 16 * s,
+      j[6].x + cos(a[6] + PI / 2) * (0.030 * this.locomotion.bodyLength + abs(headToMid2) * 16 * s),
+      j[6].y + sin(a[6] + PI / 2) * (0.030 * this.locomotion.bodyLength + abs(headToMid2) * 16 * s),
+      j[5].x + cos(a[5] + PI / 2) * (0.035 * this.locomotion.bodyLength + abs(headToMid1) * 16 * s),
+      j[5].y + sin(a[5] + PI / 2) * (0.035 * this.locomotion.bodyLength + abs(headToMid1) * 16 * s),
       j[4].x,
       j[4].y
     );

@@ -59,7 +59,14 @@ export class GoldfishBoid {
     this.velocity = p5.Vector.fromAngle(angle).mult(this.maxSpeed * 0.5);
 
     // Renderer
-    this.goldfish = new Goldfish(this.position.copy(), this.scale, config.bodyColor, config.finColor, config.patchConfig);
+    this.goldfish = new Goldfish(
+      this.position.copy(),
+      this.scale,
+      config.bodyColor,
+      config.finColor,
+      config.patchConfig,
+      this.velocity.heading(),
+    );
 
     // Grab state
     this.isGrabbed = false;
@@ -207,14 +214,16 @@ export class GoldfishBoid {
     this.position.add(this.velocity);
     if (settings.collisions) this.detectCollision(sameGroupBoids);
     this.edgeCheck(settings.walls, settings.canvasW, settings.canvasH);
-    this.goldfish.resolveToPosition(this.position.copy());
+    const dt = Math.min(deltaTime / 1000, 0.05);
+    this.goldfish.resolveToPosition(this.position.copy(), this.velocity, dt);
   }
 
   /**
    * Update render position only (for grabbed state)
    */
   resolveRenderPosition() {
-    this.goldfish.resolveToPosition(this.position.copy());
+    const dt = Math.min(deltaTime / 1000, 0.05);
+    this.goldfish.resolveToPosition(this.position.copy(), this.velocity, dt);
   }
 
   display() {

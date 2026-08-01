@@ -6,7 +6,7 @@
  */
 
 import { Chain } from '../../core/Chain.js';
-import { relativeAngleDiff } from '../../utils/geometry.js';
+import { FishLocomotion } from '../../core/FishLocomotion.js';
 
 function mulberry32(seed) {
   return function() {
@@ -24,12 +24,23 @@ export class Goldfish {
    * @param {p5.Color} bodyColor - Body fill color
    * @param {p5.Color} finColor - Fin fill color
    */
-  constructor(origin, scale = 1.0, bodyColor = null, finColor = null, patchConfig = null) {
+  constructor(origin, scale = 1.0, bodyColor = null, finColor = null, patchConfig = null, heading = 0) {
     this.scale = scale;
 
     // 14 segments: 10 body + 4 tail (more tail joints for tri-lobe fin)
     this.linkSize = Math.round(48 * scale);
-    this.spine = new Chain(origin, 15, this.linkSize, PI / 6);
+    this.locomotion = new FishLocomotion(origin, 15, this.linkSize, heading, {
+      maxBend: PI / 5,
+      maxYawRate: 3.5,
+      gait: {
+        beta: 0.78 + random(-0.035, 0.035),
+        waveNum: 0.75 + random(-0.05, 0.05),
+        tipAmpMax: 0.12 + random(-0.01, 0.01),
+        strouhal: 0.31,
+      },
+      spine: { tailLimp: 0.55, finTau: 0.075 },
+    });
+    this.spine = this.locomotion.spine;
 
     this.bodyColor = bodyColor || color(200, 80, 40);
     this.finColor = finColor || color(230, 140, 80);
@@ -57,8 +68,8 @@ export class Goldfish {
    * Drive the goldfish spine to a new head position
    * @param {p5.Vector} pos - New head position
    */
-  resolveToPosition(pos) {
-    this.spine.resolve(pos);
+  resolveToPosition(pos, velocity, dt) {
+    this.locomotion.update(pos, velocity, dt);
     // Update pectoral fin chains: root follows body joint 2
     const j2 = this.spine.joints[2];
     const a2 = this.spine.angles[2];
@@ -79,11 +90,7 @@ export class Goldfish {
    * @param {number} headingAngle - Direction facing (radians)
    */
   resetSpine(pos, headingAngle) {
-    for (let i = 0; i < this.spine.joints.length; i++) {
-      this.spine.joints[i].x = pos.x - cos(headingAngle) * this.linkSize * i;
-      this.spine.joints[i].y = pos.y - sin(headingAngle) * this.linkSize * i;
-      this.spine.angles[i] = headingAngle;
-    }
+    this.locomotion.reset(pos, headingAngle);
     // Reset pectoral fin chains: fins trail backward from attachment point
     const j2 = this.spine.joints[2];
     const a2 = headingAngle;
@@ -117,9 +124,9 @@ export class Goldfish {
     const j = this.spine.joints;
     const a = this.spine.angles;
 
-    const headToMid1 = relativeAngleDiff(a[0], a[6]);
-    const headToMid2 = relativeAngleDiff(a[0], a[7]);
-    const headToTail = headToMid1 + relativeAngleDiff(a[6], a[13]);
+    const headToMid1 = a[6] - a[0];
+    const headToMid2 = a[7] - a[0];
+    const headToTail = this.spine.headToTail;
 
     // === PECTORAL FINS (IK chain-driven, flowing) ===
     this._drawPecFin(this.leftPecFin, 1);   // left: inner side is +PI/2
@@ -138,9 +145,9 @@ export class Goldfish {
     pop();
 
     // === TRIPLE-FORKED CAUDAL FIN ===
-    this._drawFinLobe(j, a, headToTail, s, -1, 1.3, 40 * s);  // upper lobe
-    this._drawFinLobe(j, a, headToTail, s, 1, 1.3, 40 * s);   // lower lobe
-    this._drawFinLobe(j, a, headToTail, s, 0, 0.8, 55 * s);   // center lobe
+    this._drawFinLobe(j, this.spine.finAngles, headToTail, s, -1, 1.3, 40 * s);  // upper lobe
+    this._drawFinLobe(j, this.spine.finAngles, headToTail, s, 1, 1.3, 40 * s);   // lower lobe
+    this._drawFinLobe(j, this.spine.finAngles, headToTail, s, 0, 0.8, 55 * s);   // center lobe
 
     // === BODY (fill + optional patches + stroke) ===
     noStroke();
@@ -171,10 +178,10 @@ export class Goldfish {
     vertex(j[4].x, j[4].y);
     bezierVertex(j[5].x, j[5].y, j[6].x, j[6].y, j[7].x, j[7].y);
     bezierVertex(
-      j[6].x + cos(a[6] + PI / 2) * headToMid2 * 20 * s,
-      j[6].y + sin(a[6] + PI / 2) * headToMid2 * 20 * s,
-      j[5].x + cos(a[5] + PI / 2) * headToMid1 * 20 * s,
-      j[5].y + sin(a[5] + PI / 2) * headToMid1 * 20 * s,
+      j[6].x + cos(a[6] + PI / 2) * (0.030 * this.locomotion.bodyLength + abs(headToMid2) * 20 * s),
+      j[6].y + sin(a[6] + PI / 2) * (0.030 * this.locomotion.bodyLength + abs(headToMid2) * 20 * s),
+      j[5].x + cos(a[5] + PI / 2) * (0.035 * this.locomotion.bodyLength + abs(headToMid1) * 20 * s),
+      j[5].y + sin(a[5] + PI / 2) * (0.035 * this.locomotion.bodyLength + abs(headToMid1) * 20 * s),
       j[4].x,
       j[4].y
     );
