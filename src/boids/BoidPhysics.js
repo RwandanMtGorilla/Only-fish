@@ -7,6 +7,18 @@
 
 const BoidPhysics = {
 
+  /** 食物视野为 300 度，包含左右 150 度边界，正后方 60 度为盲区。 */
+  canSeeFood(position) {
+    // 使用身体实际朝向，避免转弯时视野提前跟随速度旋转；静止时仍保留朝向。
+    const body = this.fish ?? this.goldfish ?? this.shrimp ?? this.turtle;
+    const heading = body?.spine?.angles[0] ?? this.velocity.heading();
+    const dx = position.x - this.position.x;
+    const dy = position.y - this.position.y;
+    const distance = Math.hypot(dx, dy);
+    const forward = dx * Math.cos(heading) + dy * Math.sin(heading);
+    return forward >= distance * Math.cos(5 * Math.PI / 6) - 1e-10;
+  },
+
   /**
    * 记录当前速度快照，供带反应延迟的 Alignment 查询。
    * 仅配置了 reactionDelayMs 的动物会保存历史。

@@ -202,6 +202,7 @@ export class TurtleBoid {
       let closestFood = null;
       let closestDist = Infinity;
       for (let i = 0; i < settings.foods.length; i++) {
+        if (!this.canSeeFood(settings.foods[i].position)) continue;
         const d = p5.Vector.dist(this.position, settings.foods[i].position);
         if (d < closestDist) {
           closestDist = d;

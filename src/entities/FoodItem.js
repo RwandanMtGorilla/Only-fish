@@ -54,6 +54,7 @@ export class FoodItem {
       const boid = boids[i];
       if (boid === grabbedBoid || boid.isGrabbed) continue;
       if (boid.eatCooldown == null) continue;
+      if (!boid.canSeeFood(this.position)) continue;
 
       const center = boid.position;
       const d = p5.Vector.dist(this.position, center);
