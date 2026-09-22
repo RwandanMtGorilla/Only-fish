@@ -5,7 +5,7 @@
  * @module animals/goldfish/Goldfish
  */
 
-import { Chain } from '../../core/Chain.js';
+import { PectoralFin, updatePectoralFins, pectoralFinOutline, drawPectoralFin } from '../../core/PectoralFin.js';
 import { FishLocomotion } from '../../core/FishLocomotion.js';
 
 function mulberry32(seed) {
@@ -54,10 +54,10 @@ export class Goldfish {
     this.bodyWidth = [52, 68, 72, 70, 62, 48, 36, 26, 22, 14].map(w => w * scale);
 
     // Pectoral fin IK chains (left/right, 5 joints each, loose angle constraint for flowing motion)
-    const finLinkSize = Math.round(35 * scale);
-    this.leftPecFin = new Chain(origin, 5, finLinkSize, PI / 2);
-    this.rightPecFin = new Chain(origin, 5, finLinkSize, PI / 2);
-    this.finWidths = [35, 42, 35, 40, 0].map(w => w * scale);
+    const finLinkSize = 26 * scale;
+    this.leftPecFin = new PectoralFin(origin, finLinkSize);
+    this.rightPecFin = new PectoralFin(origin, finLinkSize);
+    this.finWidths = [24, 28, 22, 12, 0].map(w => w * scale);
     this.resetSpine(origin, heading);
 
     // Koi-style color patches
@@ -76,7 +76,7 @@ export class Goldfish {
    */
   resolveToPosition(pos, velocity, dt, isGrabbed = false) {
     this.locomotion.update(pos, velocity, dt);
-    this._updatePectoralFins(isGrabbed);
+    this._updatePectoralFins(isGrabbed, false, dt ?? 1 / 60);
   }
 
   /** Reinitialize body and fins together after a wrap or teleport. */
@@ -85,42 +85,8 @@ export class Goldfish {
     this._updatePectoralFins(false, true);
   }
 
-  _updatePectoralFins(isGrabbed, reset = false) {
-    const joint = this.spine.joints[2];
-    const heading = this.spine.angles[2];
-    for (const [chain, side] of [[this.leftPecFin, 1], [this.rightPecFin, -1]]) {
-      const rootAngle = heading + side * Math.PI * 5 / 12;
-      const root = createVector(
-        joint.x + Math.cos(rootAngle) * this.bodyWidth[2],
-        joint.y + Math.sin(rootAngle) * this.bodyWidth[2],
-      );
-      if (reset) {
-        // Chain angles point toward the root; joint positions trail behind it.
-        for (let i = 0; i < chain.joints.length; i++) {
-          chain.joints[i].set(
-            root.x - Math.cos(heading) * chain.linkSize * i,
-            root.y - Math.sin(heading) * chain.linkSize * i,
-          );
-          chain.angles[i] = heading;
-        }
-      } else if (isGrabbed) {
-        // Transport the fin in the body's frame. Pointer reversals and thrashing
-        // must not become a new swimming direction for the fin's root.
-        const oldRoot = chain.joints[0].copy();
-        const turn = heading - chain.angles[0];
-        const c = Math.cos(turn), s = Math.sin(turn);
-        for (let i = 0; i < chain.joints.length; i++) {
-          const x = chain.joints[i].x - oldRoot.x;
-          const y = chain.joints[i].y - oldRoot.y;
-          chain.joints[i].set(root.x + c * x - s * y, root.y + s * x + c * y);
-          chain.angles[i] += turn;
-        }
-      } else {
-        // Anchor the root orientation to the body, retaining the trailing IK.
-        chain.angles[0] = heading;
-        chain.resolve(root, 0);
-      }
-    }
+  _updatePectoralFins(isGrabbed, reset = false, dt = 0) {
+    updatePectoralFins(this, isGrabbed, reset, dt);
   }
 
   /**
@@ -206,35 +172,11 @@ export class Goldfish {
 
   /** Outline includes both attachment edges, with its inner root buried in the body. */
   _pectoralFinOutline(finChain, side) {
-    const points = [];
-    const heading = this.spine.angles[2];
-    for (const edge of [1, -1]) {
-      // Walk the outside to the tip and return along the body-facing edge.
-      // The zero-width tip is shared, so include it only once.
-      for (let n = 0; n < finChain.joints.length - (edge === -1 ? 1 : 0); n++) {
-        const i = edge === 1 ? n : finChain.joints.length - 2 - n;
-        const joint = finChain.joints[i];
-        const normal = finChain.angles[i] + edge * side * Math.PI / 2;
-        const shift = edge === -1 && i < 3 ? this.scale * 30 * (1 - i * 0.3) : 0;
-        points.push({
-          x: joint.x + Math.cos(normal) * this.finWidths[i] + Math.cos(heading) * shift,
-          y: joint.y + Math.sin(normal) * this.finWidths[i] + Math.sin(heading) * shift,
-        });
-      }
-    }
-    return points;
+    return pectoralFinOutline(this, finChain, side);
   }
 
-  /** Periodic Catmull-Rom contour: every outline point is an actual curve endpoint. */
   _drawPecFin(finChain, side) {
-    const points = this._pectoralFinOutline(finChain, side);
-    beginShape();
-    // p5 uses the first/last curveVertex as controls, not visible endpoints.
-    // Wrap the controls so both root edges are rendered and the seam is smooth.
-    for (const point of [points.at(-1), ...points, points[0], points[1]]) {
-      curveVertex(point.x, point.y);
-    }
-    endShape(CLOSE);
+    drawPectoralFin(this, finChain, side);
   }
 
   /**

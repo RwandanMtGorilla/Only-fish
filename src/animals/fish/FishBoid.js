@@ -224,7 +224,7 @@ export class FishBoid {
     this.edgeCheck(settings.walls, settings.canvasW, settings.canvasH);
     // 驱动 IK 鱼体动画, 必须传 copy
     const dt = 1 / 60;
-    this.fish.resolveToPosition(this.position.copy(), this.velocity, dt);
+    this.fish.resolveToPosition(this.position.copy(), this.velocity, dt, this.isGrabbed);
   }
 
   /**
@@ -232,7 +232,7 @@ export class FishBoid {
    */
   resolveRenderPosition() {
     const dt = 1 / 60;
-    this.fish.resolveToPosition(this.position.copy(), this.velocity, dt);
+    this.fish.resolveToPosition(this.position.copy(), this.velocity, dt, this.isGrabbed);
   }
 
   /**

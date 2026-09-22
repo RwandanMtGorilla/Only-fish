@@ -4,6 +4,7 @@
  * @module animals/fish/Fish
  */
 
+import { PectoralFin, updatePectoralFins, drawPectoralFin } from '../../core/PectoralFin.js';
 import { FishLocomotion } from '../../core/FishLocomotion.js';
 
 export class Fish {
@@ -39,14 +40,20 @@ export class Fish {
 
     // Width of the fish at each vertebra, scaled
     this.bodyWidth = [68, 81, 84, 83, 77, 64, 51, 38, 32, 19].map(w => w * scale);
+    this.pectoralJoint = 3;
+    this.leftPecFin = new PectoralFin(origin, 21 * scale);
+    this.rightPecFin = new PectoralFin(origin, 21 * scale);
+    this.finWidths = [18, 23, 18, 10, 0].map(w => w * scale);
+    this.resetSpine(origin, heading);
   }
 
   /**
    * Drive the fish spine to a new head position (called by FishBoid)
    * @param {p5.Vector} pos - New head position
    */
-  resolveToPosition(pos, velocity, dt) {
+  resolveToPosition(pos, velocity, dt, isGrabbed = false) {
     this.locomotion.update(pos, velocity, dt);
+    updatePectoralFins(this, isGrabbed, false, dt ?? 1 / 60);
   }
 
   /**
@@ -56,6 +63,7 @@ export class Fish {
    */
   resetSpine(pos, headingAngle) {
     this.locomotion.reset(pos, headingAngle);
+    updatePectoralFins(this, false, true);
   }
 
   /**
@@ -75,18 +83,8 @@ export class Fish {
     const headToTail = this.spine.headToTail;
 
     // === PECTORAL FINS ===
-    push();
-    translate(this._getPosX(3, PI / 3, 0), this._getPosY(3, PI / 3, 0));
-    const pectoralFlare = PI / 4 + this.locomotion.brake * PI / 5;
-    const pectoralLength = 160 * s * (0.72 + 0.42 * this.locomotion.brake);
-    rotate(a[2] - pectoralFlare);
-    ellipse(0, 0, pectoralLength, 64 * s);
-    pop();
-    push();
-    translate(this._getPosX(3, -PI / 3, 0), this._getPosY(3, -PI / 3, 0));
-    rotate(a[2] + pectoralFlare);
-    ellipse(0, 0, pectoralLength, 64 * s);
-    pop();
+    drawPectoralFin(this, this.leftPecFin, 1);
+    drawPectoralFin(this, this.rightPecFin, -1);
 
     // === VENTRAL FINS ===
     push();

@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8">
+<title>Pectoral motion study</title>
+<style>body{margin:0;background:#142b32;color:#e4f3f4;font:14px sans-serif}h2,p{margin:10px}canvas{max-width:100%;height:auto!important}a{color:#76e3cd}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<h2>单鱼胸鳍 · 直游 / 转向 × 低速 / 高速</h2>
+<p><a href="?species=fish">普通鱼</a> · <a href="?species=goldfish">金鱼</a> ｜ 每行连续 6 帧，相隔 0.10 秒；统一鱼头朝向以检查局部姿态。BL/s 为体长/秒。</p>
+<script type="module">
+import { Fish } from '../src/animals/fish/Fish.js';
+import { Goldfish } from '../src/animals/goldfish/Goldfish.js';
+const params = new URLSearchParams(location.search);
+const Body = params.get('species') === 'goldfish' ? Goldfish : Fish;
+window.setup = () => {
+  createCanvas(1560, 880); pixelDensity(1); noLoop(); background('#142b32');
+  const scenarios = [ ['低速直游',0.25,0], ['高速直游',1.5,0], ['低速转向',0.25,0.9], ['高速转向',1.5,0.9] ];
+  scenarios.forEach(([name,speed,yaw],row) => {
+    randomSeed(123); const pos=createVector(0,0), fish=new Body(pos,0.30);
+    fish.locomotion.gait.phase=0;
+    let heading=0;
+    for(let frame=0;frame<=210;frame++) {
+      heading += (frame >= 60 ? yaw : 0)/60;
+      const velocity=p5.Vector.fromAngle(heading).mult(speed*fish.locomotion.bodyLength/60);
+      pos.add(velocity); fish.resolveToPosition(pos,velocity,1/60);
+      if(frame>=180 && (frame-180)%6===0) {
+        const col=(frame-180)/6, x=col*260,y=row*220;
+        push(); noStroke(); fill('#c4d6dc'); text(`${name} ${speed} BL/s | ${(frame/60).toFixed(2)}s`,x+10,y+20);
+        stroke('#25464c'); line(x,y+219,x+260,y+219);
+        translate(x+230,y+113); rotate(-fish.spine.angles[0]); translate(-pos.x,-pos.y);
+        fish.display(); pop();
+      }
+    }
+  });
+};
+</script>
