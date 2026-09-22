@@ -32,6 +32,10 @@ export class LighthillGait {
 
     this.camberGain = options.camberGain ?? 0.25;
     this.camberMax = options.camberMax ?? 0.90;
+    // Small stroke asymmetry for ordinary turns, independent of forward speed.
+    this.turnAsymmetryMax = options.turnAsymmetryMax ?? 0.22;
+    this.turnYawReference = options.turnYawReference ?? 0.45;
+    this.tauTurn = options.tauTurn ?? 0.25;
     this.tauAmplitude = options.tauAmplitude ?? 0.25;
     this.tauCamber = options.tauCamber ?? 0.18;
     this.tauWave = options.tauWave ?? 0.35;
@@ -42,6 +46,7 @@ export class LighthillGait {
     this.tipAmplitude = this.tipAmpMin;
     this.amplitude = 0;
     this.camber = 0;
+    this.turnAsymmetry = 0;
   }
 
   get tipGain() {
@@ -85,6 +90,12 @@ export class LighthillGait {
     );
     this.camber += (camberTarget - this.camber)
       * (1 - Math.exp(-dt / this.tauCamber));
+
+    const turnTarget = -this.turnAsymmetryMax
+      * Math.tanh(yawRate / this.turnYawReference)
+      * smoothstep(0, this.uHalf, speedBL);
+    this.turnAsymmetry += (turnTarget - this.turnAsymmetry)
+      * (1 - Math.exp(-dt / this.tauTurn));
   }
 
   slope(u) {
@@ -92,11 +103,21 @@ export class LighthillGait {
     const envelope = (1 - this.beta) * u + this.beta * u * u;
     const envelopeSlope = (1 - this.beta) + 2 * this.beta * u;
     const localPhase = wave * u - this.phase;
-    return this.amplitude * (
+    const slope = this.amplitude * (
       envelopeSlope * Math.sin(localPhase)
       + envelope * wave * Math.cos(localPhase)
       + this.mitigate * (1 - this.beta) * Math.sin(this.phase)
     );
+    // Deform the travelling displacement y into y + b*y²/a. Its derivative
+    // makes one stroke broader and the opposite stroke smaller, without a
+    // phase reset or a discontinuity at the centre crossing. The sign follows
+    // camber's head-to-tail convention; this is visual steering, not thrust.
+    const displacement = this.amplitude * (
+      envelope * Math.sin(localPhase)
+      + this.mitigate * (1 - this.beta) * u * Math.sin(this.phase)
+    );
+    return slope * (1 + 2 * this.turnAsymmetry * displacement
+      / Math.max(this.tipAmplitude, 1e-6));
   }
 
   /** Relative joint bends. Index zero is always locked to the navigation heading. */

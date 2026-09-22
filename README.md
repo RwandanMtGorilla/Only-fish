@@ -58,6 +58,19 @@ Tests use Node's built-in runner and a small deterministic p5 math/DOM adapter. 
 
 Personal IDE, virtual-environment and AI-tool settings are ignored. The old internal/UI term has been renamed to colorSeparation / Color Separation.
 
+## Turn animation study
+
+Run `npm run study:turn -- --interval=8 --speed=1 --yaw=0.3` to generate
+`screenshots/turn-study.html`, `.svg`, and `.json`. Open the HTML or SVG to compare
+symmetric strokes, the previous turn strength (0.16), and the current default.
+The tool uses production locomotion and spine code with a simplified fish outline;
+it does not reproduce the p5 fin renderer. All variants share the same trajectory
+and starting phase. The top strips sample every `interval` simulation frames;
+the lower path samples every 30 frames. Speed is in body lengths per second,
+yaw in radians per second (use a negative value for the opposite turn).
+The sequence includes turn onset and recovery, and reports joint-limit hits
+and the largest per-frame joint change. Generated artifacts are git-ignored.
+
 ## License
 
 [MIT](LICENSE)
