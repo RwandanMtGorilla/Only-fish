@@ -76,3 +76,40 @@ test('grabbed goldfish transports both fin ribbons through reversals, pauses and
     checkGeometry(body);
   }
 });
+
+test('turning fin curves render both buried roots and close through every outline point', t => {
+  let vertices;
+  const globals = { beginShape: () => { vertices = []; },
+    curveVertex: (x, y) => vertices.push({ x, y }), endShape() {}, CLOSE: 'close' };
+  const previous = Object.fromEntries(Object.keys(globals).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  Object.assign(globalThis, globals);
+  t.after(() => {
+    for (const [key, descriptor] of Object.entries(previous)) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else delete globalThis[key];
+    }
+  });
+  for (const yaw of [-1.8, -0.8, 0, 0.8, 1.8]) {
+    const position = createVector(0, 0), body = new Goldfish(position, 0.45);
+    body.locomotion.gait.phase = 0;
+    let heading = 0;
+    for (let frame = 0; frame < 360; frame++) {
+      heading += yaw / 60;
+      const velocity = p5.Vector.fromAngle(heading).mult(0.7);
+      position.add(velocity);
+      body.resolveToPosition(position, velocity, 1 / 60);
+      fins(body).forEach((chain, f) => {
+        body._drawPecFin(chain, f === 0 ? 1 : -1);
+        // Catmull-Rom interpolates only points 1..length-2. The rendered
+        // contour must return to its first point, not close across omitted roots.
+        assert.deepEqual(vertices[1], vertices.at(-2));
+        assert.deepEqual(vertices[0], vertices.at(-3));
+        assert.deepEqual(vertices[2], vertices.at(-1));
+        // The final interpolated root lies well inside the thick forebody.
+        const innerRoot = vertices.at(-3), joint = body.spine.joints[2];
+        assert.ok(Math.hypot(innerRoot.x - joint.x, innerRoot.y - joint.y) < body.bodyWidth[2] * 0.9);
+        assert.ok(vertices.every(p => Number.isFinite(p.x) && Number.isFinite(p.y)));
+      });
+    }
+  }
+});

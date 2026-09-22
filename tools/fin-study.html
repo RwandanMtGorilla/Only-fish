@@ -1,0 +1,49 @@
+<!doctype html><meta charset="utf-8">
+<title>Goldfish pectoral fin study</title>
+<style>body{margin:0;background:#142b32;color:#eee;font:15px sans-serif}h2,p{margin:12px}canvas{max-width:100%;height:auto!important}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<h2>单条金鱼：自然转向连续帧</h2>
+<p>每列相隔 12 帧；上排修复前，下排当前版本。使用实际 Goldfish.display()，相同轨迹和随机种子。</p>
+<script type="module">
+import { Goldfish } from '../src/animals/goldfish/Goldfish.js';
+// Keep only the old drawing routine as a visual regression reference.
+class Before extends Goldfish {
+  _drawPecFin(chain, side) {
+    beginShape();
+    for (let i = 0; i < chain.joints.length; i++) {
+      const p = chain.joints[i], a = chain.angles[i] - side * Math.PI / 2;
+      curveVertex(p.x + Math.cos(a) * this.finWidths[i], p.y + Math.sin(a) * this.finWidths[i]);
+    }
+    for (let i = chain.joints.length - 1; i >= 0; i--) {
+      const p = chain.joints[i], a = chain.angles[i];
+      const shift = i < 3 ? this.scale * 30 * (1 - i * 0.3) : 0;
+      curveVertex(p.x + Math.cos(a + side * Math.PI / 2) * this.finWidths[i] - Math.cos(a) * shift,
+        p.y + Math.sin(a + side * Math.PI / 2) * this.finWidths[i] - Math.sin(a) * shift);
+    }
+    endShape(CLOSE);
+  }
+}
+window.setup = () => {
+  createCanvas(1440, 1000); pixelDensity(1); noLoop();
+  background('#142b32');
+  for (let scenario = 0; scenario < 2; scenario++) {
+    for (const [row, Body] of [[0, Before], [1, Goldfish]]) {
+      randomSeed(123); const pos = createVector(0, 0);
+      const fish = new Body(pos, 0.45); fish.locomotion.gait.phase = 0;
+      let heading = 0, column = 0;
+      for (let frame = 0; frame <= 300; frame++) {
+        const yaw = frame < 120 ? 0 : (scenario === 0 ? 0.8 : -1.8);
+        heading += yaw / 60;
+        const velocity = p5.Vector.fromAngle(heading).mult(scenario === 0 ? 1.5 : 0.7);
+        pos.add(velocity); fish.resolveToPosition(pos, velocity, 1 / 60);
+        if (frame >= 180 && frame <= 240 && (frame - 180) % 12 === 0) {
+          const x = column * 240, y = scenario * 500 + row * 250;
+          push(); noStroke(); fill('#c4d6dc'); text(`${row ? 'AFTER' : 'BEFORE'}  f${frame}  yaw ${yaw}`, x + 10, y + 22);
+          translate(x + 205, y + 125); rotate(-fish.spine.angles[0]); translate(-pos.x, -pos.y);
+          fish.display(); pop(); column++;
+        }
+      }
+    }
+  }
+};
+</script>

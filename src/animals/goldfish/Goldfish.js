@@ -140,8 +140,8 @@ export class Goldfish {
     const headToTail = this.spine.headToTail;
 
     // === PECTORAL FINS (IK chain-driven, flowing) ===
-    this._drawPecFin(this.leftPecFin, 1);   // left: inner side is +PI/2
-    this._drawPecFin(this.rightPecFin, -1); // right: inner side is -PI/2
+    this._drawPecFin(this.leftPecFin, 1);
+    this._drawPecFin(this.rightPecFin, -1);
 
     // === VENTRAL FINS ===
     push();
@@ -204,32 +204,35 @@ export class Goldfish {
     ellipse(this._getPosX(0, -PI / 2, -20 * s), this._getPosY(0, -PI / 2, -20 * s), 28 * s, 28 * s);
   }
 
-  /**
-   * Draw a pectoral fin using its IK chain joints.
-   * Renders a flowing ribbon shape along the chain's joints.
-   * @param {Chain} finChain - The pectoral fin IK chain
-   * @param {number} side - 1 for left fin (inner side = +PI/2), -1 for right fin (inner side = -PI/2)
-   */
-  _drawPecFin(finChain, side) {
-    const fj = finChain.joints;
-    const fa = finChain.angles;
-    const fw = this.finWidths;
-    // Shift the inner-side (body-facing) root toward the head
-    const rootShift = this.scale * 30;
-    // Inner side angle offset: left fin's inner is +PI/2, right fin's inner is -PI/2
-    const innerAngle = side * PI / 2;
-    const outerAngle = -innerAngle;
-    beginShape();
-    // Outer edge
-    for (let i = 0; i < fj.length; i++) {
-      curveVertex(fj[i].x + cos(fa[i] + outerAngle) * fw[i],
-                  fj[i].y + sin(fa[i] + outerAngle) * fw[i]);
+  /** Outline includes both attachment edges, with its inner root buried in the body. */
+  _pectoralFinOutline(finChain, side) {
+    const points = [];
+    const heading = this.spine.angles[2];
+    for (const edge of [1, -1]) {
+      // Walk the outside to the tip and return along the body-facing edge.
+      // The zero-width tip is shared, so include it only once.
+      for (let n = 0; n < finChain.joints.length - (edge === -1 ? 1 : 0); n++) {
+        const i = edge === 1 ? n : finChain.joints.length - 2 - n;
+        const joint = finChain.joints[i];
+        const normal = finChain.angles[i] + edge * side * Math.PI / 2;
+        const shift = edge === -1 && i < 3 ? this.scale * 30 * (1 - i * 0.3) : 0;
+        points.push({
+          x: joint.x + Math.cos(normal) * this.finWidths[i] + Math.cos(heading) * shift,
+          y: joint.y + Math.sin(normal) * this.finWidths[i] + Math.sin(heading) * shift,
+        });
+      }
     }
-    // Inner edge (reversed), root joints shifted forward along spine direction
-    for (let i = fj.length - 1; i >= 0; i--) {
-      const shift = i < 3 ? rootShift * (1 - i * 0.3) : 0;
-      curveVertex(fj[i].x + cos(fa[i] + innerAngle) * fw[i] - cos(fa[i]) * shift,
-                  fj[i].y + sin(fa[i] + innerAngle) * fw[i] - sin(fa[i]) * shift);
+    return points;
+  }
+
+  /** Periodic Catmull-Rom contour: every outline point is an actual curve endpoint. */
+  _drawPecFin(finChain, side) {
+    const points = this._pectoralFinOutline(finChain, side);
+    beginShape();
+    // p5 uses the first/last curveVertex as controls, not visible endpoints.
+    // Wrap the controls so both root edges are rendered and the seam is smooth.
+    for (const point of [points.at(-1), ...points, points[0], points[1]]) {
+      curveVertex(point.x, point.y);
     }
     endShape(CLOSE);
   }
