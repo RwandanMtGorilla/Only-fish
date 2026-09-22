@@ -22,8 +22,8 @@ export class GoldfishBoid {
    * @param {number} config.introversionCoefficient - Individual introversion multiplier
    * @param {number} config.quickness - Base quickness value
    * @param {number} config.quicknessCoefficient - Individual quickness multiplier
-   * @param {number} config.racism - Base color-separation value
-   * @param {number} config.racismCoefficient - Individual racism multiplier
+   * @param {number} config.colorSeparation - Base color-separation value
+   * @param {number} config.colorSeparationCoefficient - Individual colorSeparation multiplier
    * @param {number} config.speedIndex - Base speed factor
    * @param {number} config.reactionDelayMs - Alignment reaction delay in milliseconds
    */
@@ -40,13 +40,13 @@ export class GoldfishBoid {
     this.introversion = config.introversion * this.introversionCoefficient;
     this.quicknessCoefficient = config.quicknessCoefficient;
     this.quickness = config.quickness * this.quicknessCoefficient;
-    this.racismCoefficient = config.racismCoefficient;
-    this.racism = config.racism * this.racismCoefficient;
+    this.colorSeparationCoefficient = config.colorSeparationCoefficient;
+    this.colorSeparation = config.colorSeparation * this.colorSeparationCoefficient;
 
     // Speed
     this.speedIndex = config.speedIndex;
     this.maxSpeed = this.speedIndex * this.quickness;
-    this.maxForce = 0.35;
+    this.maxForce = config.maxForce;
     this.reactionDelayMs = Math.max(0, config.reactionDelayMs ?? 0);
     this.velocityHistory = [];
 
@@ -91,15 +91,15 @@ export class GoldfishBoid {
   // === Goldfish-specific Boid behaviors ===
 
   /**
-   * Separation with racism logic
+   * Separation with colorSeparation logic
    */
   separate(allBoids) {
     const sum = createVector(0, 0);
     let count = 0;
     for (let j = 0; j < allBoids.length; j++) {
       if (allBoids[j] === this) continue;
-      const racismMultiplier = (this.colorId !== allBoids[j].colorId) ? this.racism : 0;
-      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * racismMultiplier);
+      const colorSeparationMultiplier = (this.colorId !== allBoids[j].colorId) ? this.colorSeparation : 0;
+      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * colorSeparationMultiplier);
       const sep = p5.Vector.dist(this.position, allBoids[j].position);
       if (sep > 0 && sep < desiredSep) {
         const diff = p5.Vector.sub(this.position, allBoids[j].position).normalize().div(sep);
@@ -214,7 +214,7 @@ export class GoldfishBoid {
     this.position.add(this.velocity);
     if (settings.collisions) this.detectCollision(sameGroupBoids);
     this.edgeCheck(settings.walls, settings.canvasW, settings.canvasH);
-    const dt = Math.min(deltaTime / 1000, 0.05);
+    const dt = 1 / 60;
     this.goldfish.resolveToPosition(this.position.copy(), this.velocity, dt);
   }
 
@@ -222,7 +222,7 @@ export class GoldfishBoid {
    * Update render position only (for grabbed state)
    */
   resolveRenderPosition() {
-    const dt = Math.min(deltaTime / 1000, 0.05);
+    const dt = 1 / 60;
     this.goldfish.resolveToPosition(this.position.copy(), this.velocity, dt);
   }
 

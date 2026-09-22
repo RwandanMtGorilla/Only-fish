@@ -3,3 +3,6 @@
 workbench.md
 CLAUDE.md
 /screenshots/
+/.claude/
+/.venv/
+/node_modules/

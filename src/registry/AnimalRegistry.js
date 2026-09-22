@@ -87,7 +87,7 @@ export class AnimalRegistry {
     if (!gs) return {};
     const result = {};
     for (const [key, slider] of Object.entries(gs.config.sliders)) {
-      result[key] = { min: slider.min, max: slider.max, step: slider.step };
+      result[key] = { min: slider.min, max: slider.max, step: slider.step, label: slider.label };
     }
     return result;
   }
@@ -115,33 +115,38 @@ export class AnimalRegistry {
    * 每帧更新: 组内完整 flock + 跨组 separation + 物理
    * @param {Object|null} grabbedBoid - 当前被抓住的 boid
    */
-  update(grabbedBoid) {
-    const hasMultipleGroups = this.groups.size > 1;
-    const updateTime = millis();
-
-    // 在更新任何 boid 前统一采样，避免遍历顺序造成帧内历史偏差。
-    for (const boid of this._allBoids) {
-      if (boid.isDead) continue;
-      if (typeof boid.recordVelocitySample === 'function') {
-        boid.recordVelocitySample(updateTime);
-      }
+  update(grabbedBoid, updateTime = millis()) {
+    // Stable traversal keeps sequential collision resolution reproducible.
+    const groups = [...this.groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+    const ordered = groups.map(([group, gs]) => ({
+      group, boids: [...gs.boids].filter(b => !b.isDead).sort((a, b) => a.id - b.id),
+    }));
+    const all = ordered.flatMap(gs => gs.boids);
+    for (const boid of all) {
+      boid.simulationTime = updateTime;
+      boid.recordVelocitySample?.(updateTime);
+      boid.pendingImpulse = createVector(0, 0);
     }
-
-    for (const [group, gs] of this.groups) {
-      for (const boid of gs.boids) {
+    const nextVelocities = new Map();
+    // Hold positions fixed and restore velocities until every steering pass finishes.
+    for (const { group, boids } of ordered) {
+      for (const boid of boids) {
         if (boid === grabbedBoid) continue;
-        if (boid.isDead) continue;
-        // 组内完整 flock
-        boid.flock(gs.boids, this.settings, updateTime);
-        // 跨组 separation (仅在有多组时)
-        if (hasMultipleGroups) {
-          boid.separateFromOthers(this._allBoids, group);
-        }
-        // 物理更新
-        boid.physicsUpdate(gs.boids, this.settings);
+        const previous = boid.velocity.copy();
+        boid.flock(boids, this.settings, updateTime);
+        if (ordered.length > 1) boid.separateFromOthers(all, group);
+        nextVelocities.set(boid, boid.velocity.copy());
+        boid.velocity.set(previous);
       }
     }
-    // 清理已死亡的 boid (如脱离后淡出的花瓣)
+    for (const [boid, velocity] of nextVelocities) {
+      boid.velocity.set(velocity).add(boid.pendingImpulse);
+    }
+    for (const { boids } of ordered) {
+      for (const boid of boids) {
+        if (boid !== grabbedBoid) boid.physicsUpdate(boids, this.settings);
+      }
+    }
     this._purgeDeadBoids();
   }
 
@@ -149,25 +154,14 @@ export class AnimalRegistry {
    * 每帧渲染所有组的 boid (按 zIndex 从小到大, 小的在底层)
    */
   render() {
-    let detachedRendered = false;
+    const entries = [];
     for (const gs of this._renderOrder) {
-      // 在 lilypad 层之前插入脱落花瓣渲染 (鱼之上、荷叶之下)
-      if (!detachedRendered && (gs.config.zIndex ?? 0) >= 20) {
-        detachedRendered = true;
-        for (const gs2 of this._renderOrder) {
-          for (const boid of gs2.boids) {
-            if (boid.isPetal && boid.isDetached && !boid.isDead) {
-              boid.display();
-            }
-          }
-        }
-      }
-      // 正常渲染，跳过脱落花瓣
       for (const boid of gs.boids) {
-        if (boid.isPetal && boid.isDetached) continue;
-        boid.display();
+        if (!boid.isDead) entries.push({ boid, z: gs.config.getZIndex?.(boid) ?? gs.config.zIndex ?? 0 });
       }
     }
+    entries.sort((a, b) => a.z - b.z);
+    for (const { boid } of entries) boid.display();
   }
 
   /**
@@ -203,7 +197,7 @@ export class AnimalRegistry {
    * @param {Array} foods - 食物列表
    * @param {Object|null} grabbedBoid - 被抓住的 boid (跳过)
    */
-  checkFoodCollisions(foods, grabbedBoid) {
+  checkFoodCollisions(foods, grabbedBoid, now = millis()) {
     for (const boid of this._allBoids) {
       if (boid === grabbedBoid) continue;
       if (boid.eatCooldown == null) continue; // 该动物不参与进食
@@ -211,9 +205,8 @@ export class AnimalRegistry {
         const boidCenter = boid.collisionCenter || boid.position;
         const dist = p5.Vector.dist(boidCenter, foods[j].position);
         if (dist < boid.radius * 0.5 + foods[j].radius) {
-          const now = millis();
           if (now - boid.lastEatTime < boid.eatCooldown) break;
-          if (!foods[j].tryConsume()) continue;
+          if (!foods[j].tryConsume(now)) continue;
           boid.lastEatTime = now;
           if (foods[j].isDepleted()) {
             foods.splice(j, 1);
@@ -292,9 +285,9 @@ export class AnimalRegistry {
         introversionCoefficient: getCoeff() / 100,
         quickness: groupState.sliderValues.speed,
         quicknessCoefficient: getQuickCoeff() / 100,
-        racism: groupState.sliderValues.racism,
-        racismCoefficient: getCoeff() / 100,
-        speedIndex: config.physics.speedIndex,
+        colorSeparation: groupState.sliderValues.colorSeparation,
+        colorSeparationCoefficient: getCoeff() / 100,
+        ...config.physics,
         reactionDelayMs: config.physics.reactionDelayMs,
         patchConfig,
       }));

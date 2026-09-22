@@ -96,30 +96,25 @@ export class UIController {
     const input = document.getElementById(desktopId);
     const mobile = document.getElementById(mobileId);
 
-    if (input) {
-      input.checked = defaultChecked;
-      this.settings[settingKey] = defaultChecked;
-      input.onclick = () => {
-        this.settings[settingKey] = input.checked;
-        if (mobile) {
-          mobile.dataset.checked = input.checked;
-          mobile.classList.toggle('boids-checkbox-on');
-        }
-        onOff?.(input.checked);
-      };
-    }
-
-    if (mobile) {
-      mobile.dataset.checked = defaultChecked;
-      mobile.onclick = () => {
-        const newVal = mobile.dataset.checked === 'false';
-        mobile.dataset.checked = newVal;
-        if (input) input.checked = newVal;
-        mobile.classList.toggle('boids-checkbox-on');
-        this.settings[settingKey] = newVal;
-        onOff?.(newVal);
-      };
-    }
+    const sync = value => {
+      this.settings[settingKey] = value;
+      if (input) input.checked = value;
+      if (mobile) {
+        mobile.dataset.checked = String(value);
+        mobile.classList.toggle('boids-checkbox-on', value);
+        mobile.setAttribute('aria-pressed', String(value));
+      }
+    };
+    sync(this.settings[settingKey] ?? defaultChecked);
+    if (input) input.onchange = () => {
+      sync(input.checked);
+      onOff?.(input.checked);
+    };
+    if (mobile) mobile.onclick = () => {
+      const value = !this.settings[settingKey];
+      sync(value);
+      onOff?.(value);
+    };
   }
 
   // === 动物下拉框 ===
@@ -163,64 +158,59 @@ export class UIController {
     }
   }
 
-  // === 4个滑块 ===
-
+  // Sliders and mobile buttons are generated from the selected group's schema.
   _initSliders() {
-    const sliderKeys = ['introversion', 'speed', 'racism', 'diversity'];
-    for (const key of sliderKeys) {
-      const input = document.getElementById(key);
-      if (!input) continue;
-
-      // 桌面端滑块值变更
-      input.oninput = () => {
-        // 更新 range-value span
-        const valueSpan = input.parentElement?.querySelector('.range-value');
-        if (valueSpan) valueSpan.textContent = input.value;
-      };
-      input.onchange = () => {
-        if (!this.currentGroup) return;
-        this.registry.setSliderValue(this.currentGroup, key, Number(input.value));
-      };
-
-      // 移动端按钮: 展开对应滑块面板
-      const containerId = key + '-control-container';
-      const mobileId = key + '-mobile';
-      const container = document.getElementById(containerId);
-      const mobileBtn = document.getElementById(mobileId);
-      if (mobileBtn && container) {
-        mobileBtn.onclick = function () {
-          const mobileControls = document.getElementById('mobile-boids-controls');
-          if (mobileControls) mobileControls.style.display = 'none';
-          container.classList.toggle('show');
-        };
-      }
-    }
-
-    // 初始回显
-    if (this.currentGroup) {
-      this._syncSlidersToGroup(this.currentGroup);
-    }
+    if (this.currentGroup) this._syncSlidersToGroup(this.currentGroup);
   }
 
-  /**
-   * 切换组时, 将4个滑块的值同步为该组的当前值
-   * @param {string} group
-   */
   _syncSlidersToGroup(group) {
-    const uiValues = this.registry.getSliderUIValues(group);
-    const sliderConfigs = this.registry.getSliderConfigs(group);
-    for (const [key, val] of Object.entries(uiValues)) {
-      const input = document.getElementById(key);
-      if (input) {
-        const cfg = sliderConfigs[key];
-        if (cfg) {
-          input.min = cfg.min;
-          input.max = cfg.max;
-          input.step = cfg.step;
-        }
-        input.value = val;
-        const valueSpan = input.parentElement?.querySelector('.range-value');
-        if (valueSpan) valueSpan.textContent = val;
+    for (const el of document.querySelectorAll('[data-species-slider]')) el.remove();
+    const host = document.getElementById('species-sliders');
+    const mobileHost = document.getElementById('mobile-boids-controls');
+    if (!host) return;
+    const values = this.registry.getSliderUIValues(group);
+    const configs = this.registry.getSliderConfigs(group);
+    for (const [key, cfg] of Object.entries(configs)) {
+      const container = document.createElement('div');
+      container.id = key + '-control-container';
+      container.className = 'boids-control boids-control-range';
+      container.dataset.speciesSlider = '';
+      const close = document.createElement('span');
+      close.className = 'boids-control-close';
+      close.onclick = () => {
+        container.classList.remove('show');
+        if (mobileHost) mobileHost.style.display = '';
+      };
+      const row = document.createElement('div');
+      row.className = 'range-slider';
+      const label = document.createElement('label');
+      label.htmlFor = key;
+      const title = document.createElement('p');
+      title.textContent = cfg.label ?? key;
+      label.appendChild(title);
+      const input = document.createElement('input');
+      Object.assign(input, { id: key, name: key, type: 'range', className: 'input-range',
+        min: cfg.min, max: cfg.max, step: cfg.step, value: values[key] });
+      const value = document.createElement('span');
+      value.className = 'range-value';
+      value.textContent = input.value;
+      input.oninput = () => {
+        value.textContent = input.value;
+        this.registry.setSliderValue(group, key, Number(input.value));
+      };
+      row.append(label, input, value);
+      container.append(close, row);
+      host.appendChild(container);
+      if (mobileHost) {
+        const button = document.createElement('button');
+        button.id = key + '-mobile';
+        button.textContent = cfg.label ?? key;
+        button.dataset.speciesSlider = '';
+        button.onclick = () => {
+          mobileHost.style.display = 'none';
+          container.classList.add('show');
+        };
+        mobileHost.appendChild(button);
       }
     }
   }

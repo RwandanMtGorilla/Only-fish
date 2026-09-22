@@ -30,8 +30,8 @@ export const shrimpConfig = {
       toParam: (v) => v / 10 + 0.5,
       toUI: (v) => Math.round((v - 0.5) * 10),
     },
-    racism: {
-      label: 'Racism',
+    colorSeparation: {
+      label: 'Color Separation',
       min: 0, max: 20, step: 1, defaultValue: 11,
       toParam: (v) => v / 5,
       toUI: (v) => Math.round(v * 5),
@@ -51,7 +51,7 @@ export const shrimpConfig = {
   ],
 
   physics: {
-    speedIndex: 2.5,
+    speedIndex: 1.75, // Includes the original 0.7 shrimp speed factor
     maxForce: 0.2,
     reactionDelayMs: 250,
   },
@@ -70,8 +70,8 @@ export const shrimpConfig = {
         boid.quickness = paramValue * boid.quicknessCoefficient;
         boid.maxSpeed = groupState.config.physics.speedIndex * boid.quickness;
         break;
-      case 'racism':
-        boid.racism = paramValue * boid.racismCoefficient;
+      case 'colorSeparation':
+        boid.colorSeparation = paramValue * boid.colorSeparationCoefficient;
         break;
       case 'diversity': {
         const paletteIdx = boid.id % paramValue;

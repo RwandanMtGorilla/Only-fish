@@ -24,14 +24,6 @@ export class PetalBoid {
     this.position = createVector(config.x, config.y);
     this.velocity = createVector(0, 0);
 
-    // Interface compatibility coefficients
-    this.introversionCoefficient = config.introversionCoefficient;
-    this.introversion = config.introversion * this.introversionCoefficient;
-    this.quicknessCoefficient = config.quicknessCoefficient;
-    this.quickness = config.quickness * this.quicknessCoefficient;
-    this.racismCoefficient = config.racismCoefficient;
-    this.racism = config.racism * this.racismCoefficient;
-    this.speedIndex = config.speedIndex;
 
     // Type marker
     this.isPetal = true;
@@ -60,8 +52,10 @@ export class PetalBoid {
     this.stemRadius = 0;  // Attached: no cross-group separation
     // hitRadius set after renderer init (needs petalLength)
     this.mass = 0.1;
-    this.maxSpeed = 1.5;
-    this.maxForce = 0.15;
+    this.maxSpeed = config.maxSpeed;
+    this.maxForce = config.maxForce;
+    this.detachedMaxSpeed = config.detachedMaxSpeed;
+    this.detachedMaxForce = config.detachedMaxForce;
     this.friction = 0.985;  // Low drag when detached (floats on water)
 
     // Grab state
@@ -117,7 +111,7 @@ export class PetalBoid {
       const springForce = p5.Vector.sub(target, this.position).mult(this.springK);
       this.velocity.add(springForce);
       // Newton's third law: reaction force on center (attenuated by mass ratio)
-      this.parentCenter.velocity.add(springForce.copy().mult(-0.3));
+      this.parentCenter.pendingImpulse.add(springForce.copy().mult(-0.3));
     } else {
       // === Detached: passive floating, only wall avoidance ===
       if (settings.walls) {
@@ -153,9 +147,9 @@ export class PetalBoid {
   _detach() {
     this.isDetached = true;
     this.stemRadius = this.radius; // Start participating in cross-group separation
-    this.maxSpeed = 2.0;
-    this.maxForce = 0.2;
-    this.detachTime = millis();
+    this.maxSpeed = this.detachedMaxSpeed;
+    this.maxForce = this.detachedMaxForce;
+    this.detachTime = this.simulationTime ?? 0;
     // Remove from parent's petal list
     const idx = this.parentCenter.petals.indexOf(this);
     if (idx >= 0) this.parentCenter.petals.splice(idx, 1);
@@ -231,7 +225,7 @@ export class PetalBoid {
       if (settings.collisions) this.detectCollision(sameGroupBoids);
 
       // Fade-out timer
-      const elapsed = millis() - this.detachTime;
+      const elapsed = this.simulationTime - this.detachTime;
       if (elapsed > this.fadeDelay) {
         const fadeProgress = elapsed - this.fadeDelay;
         this.petal.alpha = Math.max(0, map(fadeProgress, 0, this.fadeDuration, 255, 0));

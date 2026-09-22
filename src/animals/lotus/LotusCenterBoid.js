@@ -20,14 +20,6 @@ export class LotusCenterBoid {
     this.position = createVector(config.x, config.y);
     this.velocity = createVector(0, 0);
 
-    // Interface compatibility coefficients
-    this.introversionCoefficient = config.introversionCoefficient;
-    this.introversion = config.introversion * this.introversionCoefficient;
-    this.quicknessCoefficient = config.quicknessCoefficient;
-    this.quickness = config.quickness * this.quicknessCoefficient;
-    this.racismCoefficient = config.racismCoefficient;
-    this.racism = config.racism * this.racismCoefficient;
-    this.speedIndex = config.speedIndex;
 
     // Type marker
     this.isCenter = true;
@@ -40,8 +32,8 @@ export class LotusCenterBoid {
     this.mass = Math.pow(this.scale, 2) * 6;
 
     // Physics (lilypad-like)
-    this.maxSpeed = 1.5;
-    this.maxForce = 0.15;
+    this.maxSpeed = config.maxSpeed;
+    this.maxForce = config.maxForce;
     this.friction = 0.96;
 
     // Spring anchor

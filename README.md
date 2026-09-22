@@ -1,139 +1,63 @@
 # Only-fish
 
-A procedural multi-species flocking simulation built with **p5.js**. Powered by the Boids algorithm for group behavior, combined with Inverse Kinematics (IK) chains for smooth, organic creature animation. All animals are rendered programmatically on Canvas 2D -- no image assets needed.
+A procedural pond simulation using p5.js 1.9.0 and native JavaScript ES modules. No build step is required. [中文文档](doc/README_CN.md)
 
-[**中文文档**](doc/README_CN.md)
+## Run
 
-## Demo
+Serve the repository over HTTP (opening index.html as a file does not support module imports):
 
-Fish schooling with full boid behaviors (separation, alignment, cohesion), while turtles roam slowly with FABRIK-driven legs. Different species avoid each other through cross-group separation.
-
-## Features
-
-- **Boids flocking** -- same-group animals perform full separation + alignment + cohesion; different groups only repel each other
-- **IK-based animation** -- procedural spine and limb animation using inverse kinematics chains
-- **Multi-species architecture** -- register new animal types with just 3 files (renderer + behavior + config)
-- **Interactive controls** -- grab animals, drop food, toggle wall boundaries, adjust behavior sliders
-- **Fully procedural rendering** -- every animal is drawn with code, no sprites or images
-- **Responsive UI** -- desktop and mobile control panels with real-time parameter tuning
-- **Zero build step** -- pure ES Modules, no bundler or transpiler needed
-
-## Animals
-
-| Species | Count | IK Joints | Special Features |
-|---------|-------|-----------|------------------|
-| Fish | 18 | 12-segment spine | Pectoral/ventral/caudal fins, body shimmer |
-| Turtle | 8 | 10-segment spine + 4x3 legs | FABRIK quadruped legs, rigid shell |
-
-## Getting Started
-
-### Prerequisites
-
-A local HTTP server is required because the project uses ES Modules (`type="module"`). The start scripts handle this automatically.
-
-### Run
-
-**Windows:**
-```bash
-start.bat
+```sh
+python -m http.server 8080
 ```
 
-**Linux / macOS:**
-```bash
-chmod +x start.sh
-./start.sh
-```
+Open http://localhost:8080. Windows users can also run start.bat; Linux/macOS users can run ./start.sh. p5.js loads from a CDN, so the page needs internet access.
 
-The script starts a local server on port **8080** and opens your browser. It uses `python -m http.server` by default, falling back to a PowerShell-based server on Windows if Python is unavailable.
+## Pond and controls
 
-## Controls
+The default scene contains 5 fish, 22 goldfish, 3 turtles, 8 shrimp, 3 lilypads and 2 lotus flowers with individually simulated petals. Counts, palettes and scale ranges live in species configs.
 
-| Control | Type | Default | Scope |
-|---------|------|---------|-------|
-| Animal Select | Dropdown | First registered | Switch which species' sliders to edit |
-| Walls | Toggle | Off | Global |
-| Collisions | Toggle | On | Global |
-| Seek Mouse | Toggle | Off | Global |
-| Feed | Toggle | On | Global |
-| Catch Fish | Toggle | On | Global |
-| Introversion | Slider (0-20) | 10 | Per species |
-| Speed | Slider (0-20) | 12 | Per species |
-| Racism | Slider (0-20) | 10 | Per species |
-| Diversity | Slider (1-8) | 3 | Per species |
+Click empty water to feed; hold a creature or plant to drag it. The gear opens controls. Walls starts off; Collisions, Feed and Catch start on. Seek Mouse and collision-radius debugging start off.
 
-### Mouse Interactions
-
-- **Click on empty space** (Feed mode on) -- drop food
-- **Click & hold on animal** (Catch mode on) -- grab and drag, with a thrashing escape animation
-- **Mouse tracking** (Seek Mouse on) -- animals gently follow the cursor
+Choose a species to edit its controls. Moving animals expose Introversion, Speed, Color Separation (extra separation from other colors) and Diversity. Plants expose only Diversity: they drift through springs, damping and collisions rather than flocking. Slider labels, bounds, defaults and conversions come from the selected config, including mobile buttons.
 
 ## Architecture
 
+- `src/main.js`: registration, p5 lifecycle, fixed-step scheduling and pointer interaction.
+- `src/core/FixedStepClock.js`: 60 Hz simulation clock, independent of display refresh rate.
+- `src/registry/AnimalRegistry.js`: group creation, staged steering, integration, food and rendering.
+- `src/boids/BoidPhysics.js`: shared steering, boundaries, collisions and delayed velocity history.
+- `src/core/FishLocomotion.js`, `FishSpine.js`, `LighthillGait.js`: fish/goldfish path-following spines and time-based gait.
+- `src/core/Chain.js`: IK chains used by shrimp, turtles and fins.
+- `src/animals/`: species renderers, behavior and configs. `pond_plant` creates a composite group using `lilypad` and `lotus`.
+- `src/ui/UIController.js`: schema-generated sliders and synchronized desktop/mobile toggles.
+- `src/entities/FoodItem.js`: attraction, consumption cooldowns and procedural food rendering.
+
+Each draw accumulates elapsed milliseconds and executes zero or more simulation ticks, then renders. Each tick updates dragging, records velocity history, computes all steering while preserving pre-step neighbor positions/velocities, commits velocities and plant reaction impulses, integrates physics, attracts food and checks consumption. Gait receives 1/60 second per tick; velocity is pixels per tick and maxForce is the steering increment per tick. Cooldowns, alignment delay and petal fading use simulation milliseconds.
+
+Catch-up is capped at 250 ms per draw to avoid large jumps after backgrounding. Rendering has no interpolation, so a 120 Hz screen still displays 60 Hz motion. Collision solving remains sequential in stable group/id order; it is not a simultaneous multi-body solver. Stable unique ids within a group are required.
+
+## Extend
+
+For an ordinary moving species, add a renderer, Boid class and config, then import/register the config in main.js. Configs define group, label, count, scale range, palettes, physics, individual coefficient distributions, sliders and applySliderValue.
+
+The standard factory passes physics options to the constructor. Keep the constructor and slider callback on the same speed formula. Boids provide position, velocity, radius, mass, maxSpeed, maxForce, id/group and the methods flock, separateFromOthers, physicsUpdate, display and resolveRenderPosition. Shared methods can be mixed in with applyBoidPhysics. Steering may update its own velocity; use pendingImpulse for reaction forces on another entity rather than changing that entity's velocity during steering. Position changes belong in physicsUpdate.
+
+Each slider schema supplies label, min, max, step, defaultValue, toParam and toUI; applySliderValue maps it to instances. Arbitrary slider keys are supported. Species with a different constructor or composite anatomy can provide customCreateBoids(groupState), as plants do.
+
+A config's zIndex sets its default render layer. Optional getZIndex(boid) returns a dynamic layer; detached petals use this hook. Registry has no petal-specific rendering branch. Optional eatCooldown/lastEatTime enable food consumption; isDead triggers cleanup.
+
+## Tests
+
+Node.js 22 or newer is needed only for development tests; there are no npm dependencies.
+
+```sh
+npm test
 ```
-src/
-  main.js                        -- Entry: register animals + p5.js lifecycle
-  registry/AnimalRegistry.js     -- Manages groups, creation, update, render
-  ui/UIController.js             -- Checkbox/slider/select two-way binding
-  boids/BoidPhysics.js           -- Shared physics mixin (seek, collision, edges)
-  core/Chain.js                  -- IK chain (inverse kinematics spine)
-  entities/FoodItem.js           -- Food item entity
-  utils/                         -- Geometry & gaussian helpers
-  animals/
-    fish/                        -- Fish renderer + boid + config
-    turtle/                      -- Turtle renderer + boid + config
-```
 
-### Per-frame Data Flow
+Tests use Node's built-in runner and a small deterministic p5 math/DOM adapter. They cover refresh-rate equivalence, stalls, traversal order, pre-step steering, speed/config consistency, plants, dynamic sliders and checkbox synchronization. They do not validate Canvas appearance or real touch hardware. GitHub Actions runs the suite on pushes and pull requests.
 
-```
-draw()
-  -> registry.update(grabbedBoid)
-    -> boid.flock(sameGroup, settings)          // intra-group boids
-    -> boid.separateFromOthers(allBoids, group) // cross-group repulsion
-    -> boid.physicsUpdate(sameGroup, settings)   // physics + IK resolve
-  -> registry.checkFoodCollisions(foods)
-  -> foods[i].display()
-  -> registry.render()
-```
-
-### Key Design Decisions
-
-- **Mixin over inheritance** -- boid physics are mixed in via `applyBoidPhysics()`, not class hierarchy
-- **3-file convention** -- each animal is: Renderer + Boid behavior + Config, under `animals/<name>/`
-- **Config-driven sliders** -- each config defines an `applySliderValue` callback for slider-to-instance mapping
-- **Shared food pool** -- all species compete for the same food items
-
-## Adding a New Animal
-
-1. Create `src/animals/<name>/` with three files:
-
-   | File | Purpose |
-   |------|---------|
-   | `<Name>.js` | Rendering class (IK chain, drawing logic) |
-   | `<Name>Boid.js` | Behavior class (flock, physics, display); call `applyBoidPhysics()` at end |
-   | `<name>.config.js` | Registration config (group, label, palettes, physics, sliders) |
-
-2. Register in `main.js`:
-   ```js
-   import { myAnimalConfig } from './animals/myAnimal/myAnimal.config.js';
-   registry.register(myAnimalConfig);
-   ```
-
-### Boid Class Contract
-
-Your boid class must implement:
-
-- **Constructor** accepting a config object with: `id, group, x, y, scale, bodyColor, finColor, colorId, introversion, introversionCoefficient, quickness, quicknessCoefficient, racism, racismCoefficient, speedIndex, reactionDelayMs`
-- **Instance properties**: `position, velocity, maxSpeed, maxForce, radius, mass, group, isGrabbed`
-- **Methods**: `flock(sameGroupBoids, settings, updateTime)`, `physicsUpdate(sameGroupBoids, settings)`, `display()`, `resolveRenderPosition()`
-- Optional eating: define `lastEatTime` and `eatCooldown` to participate in food consumption
-
-## Tech Stack
-
-- [p5.js](https://p5js.org/) v1.9.0 -- Canvas 2D rendering
-- Vanilla JavaScript (ES Modules)
-- No build tools, no dependencies beyond p5.js
+Personal IDE, virtual-environment and AI-tool settings are ignored. The old internal/UI term has been renamed to colorSeparation / Color Separation.
 
 ## License
 
-[MIT](LICENSE) -- Copyright (c) 2026 YangZH
+[MIT](LICENSE)

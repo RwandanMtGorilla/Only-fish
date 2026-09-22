@@ -40,7 +40,7 @@ export class FishLocomotion {
     const yawRate = angleDelta(this.heading, this._previousHeading ?? this.heading) / dt;
     this._previousHeading = this.heading;
 
-    // Existing boids move by velocity once per draw; convert that legacy unit to px/s.
+    // Boid velocity is pixels per fixed 60 Hz tick; convert to px/s for gait.
     const speed = speedPerFrame * this.nominalFrameRate;
     const acceleration = this.previousSpeed === null ? 0 : (speed - this.previousSpeed) / dt;
     this.previousSpeed = speed;

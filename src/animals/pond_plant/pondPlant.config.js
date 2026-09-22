@@ -7,10 +7,9 @@
 import { LilypadBoid } from '../lilypad/LilypadBoid.js';
 import { LotusCenterBoid } from '../lotus/LotusCenterBoid.js';
 import { PetalBoid } from '../lotus/PetalBoid.js';
-import { gaussian } from '../../utils/gaussian.js';
 import { LILYPAD_PALETTES } from '../lilypad/lilypadPalettes.js';
 import { LOTUS_PALETTES, PETAL_LAYERS } from '../lotus/lotusPalettes.js';
-import { PLANT_SLIDERS, PLANT_PHYSICS, PLANT_COEFFICIENTS, applyCommonPlantSlider } from './plantDefaults.js';
+import { PLANT_SLIDERS, PLANT_PHYSICS } from './plantDefaults.js';
 
 export const pondPlantConfig = {
   group: 'pond_plant',
@@ -18,6 +17,7 @@ export const pondPlantConfig = {
   lilypadDefaultCount: 3,    // lilypad count
   lotusDefaultCount: 2,
   zIndex: 20,
+  getZIndex: boid => boid.isPetal && boid.isDetached ? 15 : 20,
   BoidClass: LilypadBoid,  // Nominal; customCreateBoids handles both types
 
   scaleRange: { min: 0.4, max: 0.95 },       // Lilypad scale range
@@ -26,7 +26,6 @@ export const pondPlantConfig = {
   sliders: PLANT_SLIDERS,
   palettes: LILYPAD_PALETTES,  // Nominal; customCreateBoids picks from separate palette arrays
   physics: PLANT_PHYSICS,
-  coefficients: PLANT_COEFFICIENTS,
 
   /**
    * Combined creation: lilypads (cluster-spawned) + lotus (center + petals)
@@ -35,8 +34,6 @@ export const pondPlantConfig = {
    */
   customCreateBoids(groupState) {
     const config = groupState.config;
-    const getCoeff = gaussian(config.coefficients.general.mean, config.coefficients.general.stdev);
-    const getQuickCoeff = gaussian(config.coefficients.quickness.mean, config.coefficients.quickness.stdev);
     const diversity = groupState.sliderValues.diversity;
 
     let boidId = 0;
@@ -82,13 +79,7 @@ export const pondPlantConfig = {
           bodyColor: color(palette.body[0], palette.body[1], palette.body[2]),
           finColor: color(palette.fin[0], palette.fin[1], palette.fin[2]),
           colorId: paletteIdx,
-          introversion: groupState.sliderValues.introversion,
-          introversionCoefficient: getCoeff() / 100,
-          quickness: groupState.sliderValues.speed,
-          quicknessCoefficient: getQuickCoeff() / 100,
-          racism: groupState.sliderValues.racism,
-          racismCoefficient: getCoeff() / 100,
-          speedIndex: config.physics.speedIndex,
+          ...config.physics,
         }));
         lilypadIdx++;
       }
@@ -115,13 +106,7 @@ export const pondPlantConfig = {
         bodyColor: color(palette.body[0], palette.body[1], palette.body[2]),
         finColor: color(palette.fin[0], palette.fin[1], palette.fin[2]),
         colorId: paletteIdx,
-        introversion: groupState.sliderValues.introversion,
-        introversionCoefficient: getCoeff() / 100,
-        quickness: groupState.sliderValues.speed,
-        quicknessCoefficient: getQuickCoeff() / 100,
-        racism: groupState.sliderValues.racism,
-        racismCoefficient: getCoeff() / 100,
-        speedIndex: config.physics.speedIndex,
+        ...config.physics,
       });
 
       // Create petals: outer layer first (renders at bottom), inner last (renders on top)
@@ -146,13 +131,7 @@ export const pondPlantConfig = {
             bodyColor: color(palette.petal[0], palette.petal[1], palette.petal[2]),
             finColor: color(palette.petalEdge[0], palette.petalEdge[1], palette.petalEdge[2]),
             colorId: paletteIdx,
-            introversion: groupState.sliderValues.introversion,
-            introversionCoefficient: getCoeff() / 100,
-            quickness: groupState.sliderValues.speed,
-            quicknessCoefficient: getQuickCoeff() / 100,
-            racism: groupState.sliderValues.racism,
-            racismCoefficient: getCoeff() / 100,
-            speedIndex: config.physics.speedIndex,
+            ...config.physics,
           });
 
           centerBoid.petals.push(petalBoid);
@@ -166,8 +145,6 @@ export const pondPlantConfig = {
   },
 
   applySliderValue(boid, key, paramValue, groupState) {
-    if (applyCommonPlantSlider(boid, key, paramValue)) return;
-
     if (key === 'diversity') {
       const paletteIdx = boid.id % paramValue;
       boid.colorId = paletteIdx;

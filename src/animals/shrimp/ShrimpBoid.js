@@ -24,8 +24,8 @@ export class ShrimpBoid {
    * @param {number} config.introversionCoefficient - 个体内向系数
    * @param {number} config.quickness - 基础敏捷值
    * @param {number} config.quicknessCoefficient - 个体敏捷系数
-   * @param {number} config.racism - 基础颜色分离值
-   * @param {number} config.racismCoefficient - 个体颜色分离系数
+   * @param {number} config.colorSeparation - 基础颜色分离值
+   * @param {number} config.colorSeparationCoefficient - 个体颜色分离系数
    * @param {number} config.speedIndex - 基础速度因子
    * @param {number} config.reactionDelayMs - 速度同步反应延迟（毫秒）
    */
@@ -43,13 +43,13 @@ export class ShrimpBoid {
     this.introversion = config.introversion * this.introversionCoefficient;
     this.quicknessCoefficient = config.quicknessCoefficient;
     this.quickness = config.quickness * this.quicknessCoefficient;
-    this.racismCoefficient = config.racismCoefficient;
-    this.racism = config.racism * this.racismCoefficient;
+    this.colorSeparationCoefficient = config.colorSeparationCoefficient;
+    this.colorSeparation = config.colorSeparation * this.colorSeparationCoefficient;
 
     // 【关键修改2：虾的速度参数（更慢、更迟钝）】
     this.speedIndex = config.speedIndex;
-    this.maxSpeed = this.speedIndex * this.quickness * 0.7; // 虾的速度是鱼的70%
-    this.maxForce = 0.2; // 鱼是0.3，虾的转向力更小（更笨拙）
+    this.maxSpeed = this.speedIndex * this.quickness;
+    this.maxForce = config.maxForce;
     this.reactionDelayMs = Math.max(0, config.reactionDelayMs ?? 0);
     this.velocityHistory = [];
 
@@ -88,15 +88,15 @@ export class ShrimpBoid {
   // === 虾的群体行为（复用鱼的逻辑，仅微调力权重） ===
 
   /**
-   * Separation: 远离附近boid，含racism额外排斥（和鱼逻辑一致）
+   * Separation: 远离附近boid，含colorSeparation额外排斥（和鱼逻辑一致）
    */
   separate(allBoids) {
     const sum = createVector(0, 0);
     let count = 0;
     for (let j = 0; j < allBoids.length; j++) {
       if (allBoids[j] === this) continue;
-      const racismMultiplier = (this.colorId !== allBoids[j].colorId) ? this.racism : 0;
-      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * racismMultiplier);
+      const colorSeparationMultiplier = (this.colorId !== allBoids[j].colorId) ? this.colorSeparation : 0;
+      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * colorSeparationMultiplier);
       const sep = p5.Vector.dist(this.position, allBoids[j].position);
       if (sep > 0 && sep < desiredSep) {
         const diff = p5.Vector.sub(this.position, allBoids[j].position).normalize().div(sep);

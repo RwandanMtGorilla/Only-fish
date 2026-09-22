@@ -27,8 +27,8 @@ export const goldfishConfig = {
       toParam: (v) => v / 10 + 0.5,
       toUI: (v) => Math.round((v - 0.5) * 10),
     },
-    racism: {
-      label: 'Racism',
+    colorSeparation: {
+      label: 'Color Separation',
       min: 0, max: 20, step: 1, defaultValue: 3,
       toParam: (v) => v / 5,
       toUI: (v) => Math.round(v * 5),
@@ -82,8 +82,8 @@ export const goldfishConfig = {
         boid.quickness = paramValue * boid.quicknessCoefficient;
         boid.maxSpeed = groupState.config.physics.speedIndex * boid.quickness;
         break;
-      case 'racism':
-        boid.racism = paramValue * boid.racismCoefficient;
+      case 'colorSeparation':
+        boid.colorSeparation = paramValue * boid.colorSeparationCoefficient;
         break;
       case 'diversity': {
         const paletteIdx = boid.id % paramValue;

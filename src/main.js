@@ -1,3 +1,4 @@
+import { FixedStepClock } from './core/FixedStepClock.js';
 /**
  * Fish Boids - Main entry point
  * 注册动物 + p5.js 生命周期 + 全局交互 (抓取状态机)
@@ -18,6 +19,7 @@ import { shrimpConfig } from './animals/shrimp/shrimp.config.js';//虾米
 // === 全局状态 ===
 const registry = new AnimalRegistry();
 const ui = new UIController();
+const simulation = new FixedStepClock();
 let foods = [];
 let settings = {
   walls: false,
@@ -69,19 +71,15 @@ window.draw = function () {
   settings.canvasW = width;
   settings.canvasH = height;
 
-  // 更新被抓的 boid
-  if (grabbedBoid) {
-    updateGrabbedBoid(grabbedBoid);
-  }
-
-  // 更新所有动物 (组内 flock + 跨组 separation + 物理)
-  registry.update(grabbedBoid);
-
-  // 食物吸入: 在碰撞检测之前将食物向附近动物移动
-  registry.attractFoods(foods, grabbedBoid);
-
-  // 所有组共享的食物碰撞检测
-  registry.checkFoodCollisions(foods, grabbedBoid);
+  simulation.advance(deltaTime, (dt, time) => {
+    if (grabbedBoid) {
+      grabbedBoid.simulationTime = time;
+      updateGrabbedBoid(grabbedBoid, dt);
+    }
+    registry.update(grabbedBoid, time);
+    registry.attractFoods(foods, grabbedBoid);
+    registry.checkFoodCollisions(foods, grabbedBoid, time);
+  });
 
   // 渲染食物 (在动物下层)
   for (let i = 0; i < foods.length; i++) {
@@ -155,8 +153,7 @@ function releaseGrabbedFish() {
   }
 }
 
-function updateGrabbedBoid(boid) {
-  const dt = deltaTime;
+function updateGrabbedBoid(boid, dt) {
 
   // 挣扎状态机
   grabThrashTimer -= dt;

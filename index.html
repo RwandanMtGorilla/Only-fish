@@ -13,35 +13,15 @@
     <div id="boids-controls-container">
       <div id="mobile-boids-controls">
         <button id="animal-select-mobile">Fish</button>
-        <button id="introversion-mobile">Introversion</button>
-        <button id="speed-mobile">Speed</button>
-        <button id="walls-mobile" class="boids-checkbox-on">Walls</button>
-        <button id="collisions-mobile">Collisions</button>
+        <button id="walls-mobile">Walls</button>
+        <button id="collisions-mobile" class="boids-checkbox-on">Collisions</button>
         <button id="mouse-seek-mobile">Seek Mouse</button>
         <button id="feed-mode-mobile" class="boids-checkbox-on">Feed</button>
         <button id="grab-fish-mobile" class="boids-checkbox-on">Catch</button>
         <button id="show-radii-mobile">Radii</button>
-        <button id="racism-mobile">Racism</button>
-        <button id="diversity-mobile">Diversity</button>
       </div>
       <div class="boids-control boids-control-select">
         <select id="animal-select"></select>
-      </div>
-      <div id="introversion-control-container" class="boids-control boids-control-range">
-        <span class="boids-control-close"></span>
-        <div class="range-slider">
-          <label for="introversion"><p>Introversion</p></label>
-          <input class="input-range" type="range" step="1" value="10" min="0" max="20" name="introversion" id="introversion">
-          <span class="range-value"></span>
-        </div>
-      </div>
-      <div id="speed-control-container" class="boids-control boids-control-range">
-        <span class="boids-control-close"></span>
-        <div class="range-slider">
-          <label for="speed"><p>Speed</p></label>
-          <input class="input-range" type="range" step="1" value="12" min="0" max="20" name="speed" id="speed">
-          <span class="range-value"></span>
-        </div>
       </div>
       <div class="boids-control boids-control-checkbox">
         <div class="checkbox">
@@ -85,22 +65,7 @@
           <label for="show-radii"></label>
         </div>
       </div>
-      <div id="racism-control-container" class="boids-control boids-control-range">
-        <span class="boids-control-close"></span>
-        <div class="range-slider">
-          <label for="racism"><p>Racism</p></label>
-          <input class="input-range" type="range" step="1" value="10" min="0" max="20" name="racism" id="racism">
-          <span class="range-value"></span>
-        </div>
-      </div>
-      <div id="diversity-control-container" class="boids-control boids-control-range">
-        <span class="boids-control-close"></span>
-        <div class="range-slider">
-          <label for="diversity"><p>Diversity</p></label>
-          <input class="input-range" type="range" step="1" value="3" min="1" max="8" name="diversity" id="diversity">
-          <span class="range-value"></span>
-        </div>
-      </div>
+      <div id="species-sliders"></div>
       <div id="fps">
         <p><span id="fps-number"></span> fps</p>
       </div>

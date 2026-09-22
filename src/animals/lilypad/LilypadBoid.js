@@ -20,18 +20,10 @@ export class LilypadBoid {
 
     this.position = createVector(config.x, config.y);
 
-    // Individual variation coefficients (kept for interface compatibility)
-    this.introversionCoefficient = config.introversionCoefficient;
-    this.introversion = config.introversion * this.introversionCoefficient;
-    this.quicknessCoefficient = config.quicknessCoefficient;
-    this.quickness = config.quickness * this.quicknessCoefficient;
-    this.racismCoefficient = config.racismCoefficient;
-    this.racism = config.racism * this.racismCoefficient;
 
     // Speed: high enough for collision response, friction keeps it still otherwise
-    this.speedIndex = config.speedIndex;
-    this.maxSpeed = 1.5;
-    this.maxForce = 0.15;
+    this.maxSpeed = config.maxSpeed;
+    this.maxForce = config.maxForce;
 
     // Leaf-level radius (used for same-group collision between lilypads)
     this.radius = this.scale * 120;

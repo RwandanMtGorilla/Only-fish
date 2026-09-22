@@ -1,6 +1,6 @@
 /**
  * FishBoid class - Combines boid flocking physics with Fish rendering
- * 鱼特有的 boid 行为: flock 力权重, racism separation, borderWrap + resetSpine
+ * 鱼特有的 boid 行为: flock 力权重, colorSeparation separation, borderWrap + resetSpine
  * 通用物理方法由 BoidPhysics mixin 提供
  * @module animals/fish/FishBoid
  */
@@ -23,8 +23,8 @@ export class FishBoid {
    * @param {number} config.introversionCoefficient - Individual introversion multiplier
    * @param {number} config.quickness - Base quickness value
    * @param {number} config.quicknessCoefficient - Individual quickness multiplier
-   * @param {number} config.racism - Base color-separation value
-   * @param {number} config.racismCoefficient - Individual racism multiplier
+   * @param {number} config.colorSeparation - Base color-separation value
+   * @param {number} config.colorSeparationCoefficient - Individual colorSeparation multiplier
    * @param {number} config.speedIndex - Base speed factor
    * @param {number} config.reactionDelayMs - Alignment reaction delay in milliseconds
    */
@@ -42,13 +42,13 @@ export class FishBoid {
     this.introversion = config.introversion * this.introversionCoefficient;
     this.quicknessCoefficient = config.quicknessCoefficient;
     this.quickness = config.quickness * this.quicknessCoefficient;
-    this.racismCoefficient = config.racismCoefficient;
-    this.racism = config.racism * this.racismCoefficient;
+    this.colorSeparationCoefficient = config.colorSeparationCoefficient;
+    this.colorSeparation = config.colorSeparation * this.colorSeparationCoefficient;
 
     // 速度
     this.speedIndex = config.speedIndex;
     this.maxSpeed = this.speedIndex * this.quickness;
-    this.maxForce = 0.3;
+    this.maxForce = config.maxForce;
     this.reactionDelayMs = Math.max(0, config.reactionDelayMs ?? 0);
     this.velocityHistory = [];
 
@@ -93,15 +93,15 @@ export class FishBoid {
   // === 鱼特有的 Boid 行为 ===
 
   /**
-   * Separation: 远离附近 boid, 含 racism 额外排斥逻辑
+   * Separation: 远离附近 boid, 含 colorSeparation 额外排斥逻辑
    */
   separate(allBoids) {
     const sum = createVector(0, 0);
     let count = 0;
     for (let j = 0; j < allBoids.length; j++) {
       if (allBoids[j] === this) continue;
-      const racismMultiplier = (this.colorId !== allBoids[j].colorId) ? this.racism : 0;
-      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * racismMultiplier);
+      const colorSeparationMultiplier = (this.colorId !== allBoids[j].colorId) ? this.colorSeparation : 0;
+      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * colorSeparationMultiplier);
       const sep = p5.Vector.dist(this.position, allBoids[j].position);
       if (sep > 0 && sep < desiredSep) {
         const diff = p5.Vector.sub(this.position, allBoids[j].position).normalize().div(sep);
@@ -222,7 +222,7 @@ export class FishBoid {
     if (settings.collisions) this.detectCollision(sameGroupBoids);
     this.edgeCheck(settings.walls, settings.canvasW, settings.canvasH);
     // 驱动 IK 鱼体动画, 必须传 copy
-    const dt = Math.min(deltaTime / 1000, 0.05);
+    const dt = 1 / 60;
     this.fish.resolveToPosition(this.position.copy(), this.velocity, dt);
   }
 
@@ -230,7 +230,7 @@ export class FishBoid {
    * 仅更新渲染位置 (不做 flock/碰撞, 用于被抓取时)
    */
   resolveRenderPosition() {
-    const dt = Math.min(deltaTime / 1000, 0.05);
+    const dt = 1 / 60;
     this.fish.resolveToPosition(this.position.copy(), this.velocity, dt);
   }
 

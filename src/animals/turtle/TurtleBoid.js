@@ -23,8 +23,8 @@ export class TurtleBoid {
    * @param {number} config.introversionCoefficient
    * @param {number} config.quickness
    * @param {number} config.quicknessCoefficient
-   * @param {number} config.racism
-   * @param {number} config.racismCoefficient
+   * @param {number} config.colorSeparation
+   * @param {number} config.colorSeparationCoefficient
    * @param {number} config.speedIndex
    * @param {number} config.reactionDelayMs
    */
@@ -42,13 +42,13 @@ export class TurtleBoid {
     this.introversion = config.introversion * this.introversionCoefficient;
     this.quicknessCoefficient = config.quicknessCoefficient;
     this.quickness = config.quickness * this.quicknessCoefficient;
-    this.racismCoefficient = config.racismCoefficient;
-    this.racism = config.racism * this.racismCoefficient;
+    this.colorSeparationCoefficient = config.colorSeparationCoefficient;
+    this.colorSeparation = config.colorSeparation * this.colorSeparationCoefficient;
 
     // 速度 (乌龟较慢)
     this.speedIndex = config.speedIndex;
     this.maxSpeed = this.speedIndex * this.quickness;
-    this.maxForce = 0.15;
+    this.maxForce = config.maxForce;
     this.reactionDelayMs = Math.max(0, config.reactionDelayMs ?? 0);
     this.velocityHistory = [];
 
@@ -103,15 +103,15 @@ export class TurtleBoid {
   // === 乌龟的 Boid 行为 ===
 
   /**
-   * Separation: 远离附近 boid, 含 racism 额外排斥
+   * Separation: 远离附近 boid, 含 colorSeparation 额外排斥
    */
   separate(allBoids) {
     const sum = createVector(0, 0);
     let count = 0;
     for (let j = 0; j < allBoids.length; j++) {
       if (allBoids[j] === this) continue;
-      const racismMultiplier = (this.colorId !== allBoids[j].colorId) ? this.racism : 0;
-      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * racismMultiplier);
+      const colorSeparationMultiplier = (this.colorId !== allBoids[j].colorId) ? this.colorSeparation : 0;
+      const desiredSep = this.radius + allBoids[j].radius + (20 * this.introversion) + (40 * colorSeparationMultiplier);
       const sep = p5.Vector.dist(this.position, allBoids[j].position);
       if (sep > 0 && sep < desiredSep) {
         const diff = p5.Vector.sub(this.position, allBoids[j].position).normalize().div(sep);

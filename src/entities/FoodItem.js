@@ -33,8 +33,7 @@ export class FoodItem {
    * 尝试消耗一单位鱼食
    * @returns {boolean} 是否成功消耗
    */
-  tryConsume() {
-    const now = millis();
+  tryConsume(now = millis()) {
     if (now - this.lastConsumeTime < this.cooldown) return false;
     this.hp -= 1;
     this.radius = Math.sqrt(this.hp / this.k);

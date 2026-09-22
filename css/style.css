@@ -93,6 +93,8 @@ canvas {
   text-transform: uppercase;
 }
 
+#species-sliders { display: contents; }
+
 .boids-control {
   box-sizing: border-box;
   text-align: center;
