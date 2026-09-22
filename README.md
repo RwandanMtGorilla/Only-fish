@@ -14,6 +14,8 @@ Open http://localhost:8080. Windows users can also run start.bat; Linux/macOS us
 
 ## Pond and controls
 
+The pond starts in colored ASCII mode. Use the top-right ASCII / Original button to switch live without resetting the simulation. Fish, turtles, shrimp, plants and food share the character post-processing layer; controls and debug radii remain sharp. The renderer uses alpha coverage, brightness and silhouette direction, a bounded glyph atlas, and an adaptive root grid (up to 320 columns and approximately 180 rows). Each root retains the original maximum character size; a single-level quadtree splits silhouettes and color details into half-width/height characters. Uniform regions keep large characters, and empty water is skipped. Details below the smallest cell can disappear, and performance depends on viewport size and device.
+
 The default scene contains 5 fish, 22 goldfish, 3 turtles, 8 shrimp, 3 lilypads and 2 lotus flowers with individually simulated petals. Counts, palettes and scale ranges live in species configs.
 
 Click empty water to feed; hold a creature or plant to drag it. The gear opens controls. Walls starts off; Collisions, Feed and Catch start on. Seek Mouse and collision-radius debugging start off.
@@ -23,6 +25,8 @@ Choose a species to edit its controls. Moving animals expose Introversion, Speed
 ## Architecture
 
 - `src/main.js`: registration, p5 lifecycle, fixed-step scheduling and pointer interaction.
+- `src/rendering/AsciiRenderer.js`: Canvas character post-processing, small-buffer sampling and cached colored glyphs. ASCII mode draws the scene on transparency, samples before replacing it, then draws debug overlays afterward.
+- `src/rendering/AsciiQuadtree.js`: coverage/color-driven subdivision, with 4x4 filtered samples per root and 2x2 samples per smallest leaf (at most four characters per root).
 - `src/core/FixedStepClock.js`: 60 Hz simulation clock, independent of display refresh rate.
 - `src/registry/AnimalRegistry.js`: group creation, staged steering, integration, food and rendering.
 - `src/boids/BoidPhysics.js`: shared steering, boundaries, collisions and delayed velocity history.

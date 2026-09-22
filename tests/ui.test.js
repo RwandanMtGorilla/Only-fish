@@ -2,6 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { UIController } from '../src/ui/UIController.js';
 
+test('render toggle switches both directions without resetting simulation settings', () => {
+  const add = dom();
+  const button = add('render-mode');
+  const ui = new UIController();
+  ui.settings = { asciiMode: true, feedMode: true, collisions: true };
+  ui._initRenderMode();
+  assert.equal(button.textContent, 'ASCII');
+  button.onclick();
+  assert.equal(ui.settings.asciiMode, false);
+  assert.equal(button.textContent, 'Original');
+  assert.equal(button.attributes['aria-pressed'], 'false');
+  button.onclick();
+  assert.equal(button.textContent, 'ASCII');
+  assert.deepEqual(ui.settings, { asciiMode: true, feedMode: true, collisions: true });
+});
+
 function dom() {
   const elements = [];
   class Element {

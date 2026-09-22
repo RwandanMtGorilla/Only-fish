@@ -1,4 +1,5 @@
 import { FixedStepClock } from './core/FixedStepClock.js';
+import { AsciiRenderer } from './rendering/AsciiRenderer.js';
 /**
  * Fish Boids - Main entry point
  * 注册动物 + p5.js 生命周期 + 全局交互 (抓取状态机)
@@ -21,7 +22,10 @@ const registry = new AnimalRegistry();
 const ui = new UIController();
 const simulation = new FixedStepClock();
 let foods = [];
+let asciiRenderer;
+let sceneCanvas;
 let settings = {
+  asciiMode: true,
   walls: false,
   mouseSeek: false,
   collisions: true,
@@ -53,6 +57,8 @@ registry.register(shrimpConfig);
 
 window.setup = function () {
   const cnv = createCanvas(windowWidth, windowHeight);
+  sceneCanvas = cnv.elt;
+  asciiRenderer = new AsciiRenderer();
   cnv.parent('boids-wrapper');
   settings.center = createVector(width / 2, height / 2);
   settings.canvasW = width;
@@ -65,7 +71,8 @@ window.setup = function () {
 };
 
 window.draw = function () {
-  background(10, 22, 40);
+  if (settings.asciiMode) clear();
+  else background(10, 22, 40);
 
   settings.mousePos.set(mouseX, mouseY);
   settings.canvasW = width;
@@ -88,6 +95,7 @@ window.draw = function () {
 
   // 渲染所有动物
   registry.render();
+  if (settings.asciiMode) asciiRenderer.render(sceneCanvas, width, height);
 
   // 调试: 显示碰撞/抓取半径
   if (settings.showRadii) {
@@ -106,6 +114,8 @@ window.mousePressed = function () {
   const el = document.elementFromPoint(mouseX, mouseY);
   const controls = document.getElementById('boids-controls-container');
   const toggleBtn = document.getElementById('toggle-controls-btn');
+  const renderControls = document.getElementById('render-controls');
+  if (renderControls && renderControls.contains(el)) return;
   if (controls && controls.contains(el)) return;
   if (toggleBtn && toggleBtn.contains(el)) return;
 

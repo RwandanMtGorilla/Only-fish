@@ -93,6 +93,40 @@ canvas {
   text-transform: uppercase;
 }
 
+#render-controls {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  right: 24px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #89a6b5;
+  font: 10px/1.4 monospace;
+  letter-spacing: 2px;
+  pointer-events: none;
+}
+.render-divider { color: #476273; margin: 0 8px; }
+#render-mode {
+  pointer-events: auto;
+  padding: 8px 12px;
+  border: 1px solid #476273;
+  border-radius: 4px;
+  background: #0a1628e6;
+  color: #b8d9cf;
+  font: 11px/1.4 monospace;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+#render-mode:hover { border-color: #b8d9cf; }
+#render-mode:focus-visible { outline: 2px solid #b8d9cf; outline-offset: 4px; }
+@media (max-width: 600px) {
+  #render-controls { top: 14px; left: 14px; right: 14px; letter-spacing: 1px; }
+  .render-divider { margin: 0 2px; }
+}
+
 #species-sliders { display: contents; }
 
 .boids-control {

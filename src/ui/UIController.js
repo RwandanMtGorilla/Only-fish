@@ -24,6 +24,7 @@ export class UIController {
     this.callbacks = callbacks;
 
     this._initToggleButton();
+    this._initRenderMode();
     this._initMobileVisibility();
     this._initMobileClosers();
     this._initCheckboxes();
@@ -33,6 +34,20 @@ export class UIController {
   }
 
   // === 齿轮按钮 ===
+
+  _initRenderMode() {
+    const button = document.getElementById('render-mode');
+    if (!button) return;
+    const sync = () => {
+      button.textContent = this.settings.asciiMode ? 'ASCII' : 'Original';
+      button.setAttribute('aria-pressed', String(this.settings.asciiMode));
+    };
+    button.onclick = () => {
+      this.settings.asciiMode = !this.settings.asciiMode;
+      sync();
+    };
+    sync();
+  }
 
   _initToggleButton() {
     const controlsContainer = document.getElementById('boids-controls-container');
