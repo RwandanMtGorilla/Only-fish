@@ -25,7 +25,12 @@ export class Fish {
         waveNum: 0.65 + random(-0.04, 0.04),
         tipAmpMax: 0.10 + random(-0.008, 0.008),
       },
-      spine: { tailLimp: 0.40 },
+      spine: {
+        tailLimp: 0.40,
+        // Head, firm forebody, flexible peduncle, then the two caudal-fin joints.
+        bendLimits: [0, 3, 4, 5, 6, 8, 11, 15, 20, 25, 30, 30]
+          .map(degrees => degrees * Math.PI / 180),
+      },
     });
     this.spine = this.locomotion.spine;
 

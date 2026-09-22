@@ -17,6 +17,15 @@ export class FishSpine {
   constructor(origin, jointCount, linkSize, maxBend = Math.PI / 6, options = {}) {
     this.linkSize = linkSize;
     this.maxBend = maxBend;
+    // Per-joint radians relative to the preceding segment; index 0 is the head.
+    // Missing entries retain the uniform limit for existing callers.
+    this.bendLimits = Float64Array.from({ length: jointCount }, (_, i) => {
+      const limit = options.bendLimits?.[i] ?? maxBend;
+      if (!Number.isFinite(limit) || limit < 0) {
+        throw new RangeError('Spine bend limits must be finite, non-negative radians');
+      }
+      return i === 0 ? 0 : limit;
+    });
     this.joints = [];
     this.angles = new Float32Array(jointCount);
     this.pathJoints = [];
@@ -85,8 +94,8 @@ export class FishSpine {
         : this.pathAngles[i];
       angle = this.pathAngles[i - 1] + clamp(
         angleDelta(angle, this.pathAngles[i - 1]),
-        -this.maxBend,
-        this.maxBend,
+        -this.bendLimits[i],
+        this.bendLimits[i],
       );
       this.pathAngles[i] = angle;
       current.set(
@@ -99,8 +108,10 @@ export class FishSpine {
     gait.relativeAngles(count, this.gaitRelative);
     this.reference[0] = 0;
     for (let i = 1; i < count; i++) {
-      this.reference[i] = angleDelta(this.pathAngles[i], this.pathAngles[i - 1])
-        + this.gaitRelative[i];
+      this.reference[i] = clamp(
+        angleDelta(this.pathAngles[i], this.pathAngles[i - 1]) + this.gaitRelative[i],
+        -this.bendLimits[i], this.bendLimits[i],
+      );
     }
 
     // Pass 3: critically damped fixed-step joint response creates a soft tail lag.
@@ -116,6 +127,14 @@ export class FishSpine {
         this.relative[i] = this.reference[i]
           + (error + coefficient * this.fixedDt) * decay;
         this.relativeVelocity[i] = (velocity - response * coefficient * this.fixedDt) * decay;
+        const limit = this.bendLimits[i];
+        if (Math.abs(this.relative[i]) >= limit) {
+          this.relative[i] = clamp(this.relative[i], -limit, limit);
+          // Remove outward momentum at a stop so reversing never has to unwind it.
+          if (limit === 0 || this.relative[i] * this.relativeVelocity[i] > 0) {
+            this.relativeVelocity[i] = 0;
+          }
+        }
       }
       for (let i = 0; i < count; i++) {
         this.finAngles[i] += angleDelta(this.angles[i], this.finAngles[i]) * finBlend;
@@ -128,7 +147,7 @@ export class FishSpine {
     this.joints[0].set(position.x, position.y);
     for (let i = 1; i < count; i++) {
       const angle = this.angles[i - 1]
-        + clamp(this.relative[i], -this.maxBend, this.maxBend);
+        + clamp(this.relative[i], -this.bendLimits[i], this.bendLimits[i]);
       this.angles[i] = angle;
       this.joints[i].set(
         this.joints[i - 1].x - Math.cos(angle) * this.linkSize,

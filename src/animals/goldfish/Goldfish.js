@@ -27,7 +27,7 @@ export class Goldfish {
   constructor(origin, scale = 1.0, bodyColor = null, finColor = null, patchConfig = null, heading = 0) {
     this.scale = scale;
 
-    // 14 segments: 10 body + 4 tail (more tail joints for tri-lobe fin)
+    // 15 joints: 10 body + 5 tail (14 links, with a flowing tri-lobe fin).
     this.linkSize = Math.round(48 * scale);
     this.locomotion = new FishLocomotion(origin, 15, this.linkSize, heading, {
       maxBend: PI / 5,
@@ -38,7 +38,12 @@ export class Goldfish {
         tipAmpMax: 0.12 + random(-0.01, 0.01),
         strouhal: 0.31,
       },
-      spine: { tailLimp: 0.55, finTau: 0.075 },
+      spine: {
+        tailLimp: 0.55, finTau: 0.075,
+        // The round forebody stays firm; the longer tail retains loose joints.
+        bendLimits: [0, 2, 3, 4, 5, 7, 10, 14, 20, 26, 30, 33, 36, 36, 36]
+          .map(degrees => degrees * Math.PI / 180),
+      },
     });
     this.spine = this.locomotion.spine;
 
@@ -53,6 +58,7 @@ export class Goldfish {
     this.leftPecFin = new Chain(origin, 5, finLinkSize, PI / 2);
     this.rightPecFin = new Chain(origin, 5, finLinkSize, PI / 2);
     this.finWidths = [35, 42, 35, 40, 0].map(w => w * scale);
+    this.resetSpine(origin, heading);
 
     // Koi-style color patches
     if (patchConfig && patchConfig.colors) {
@@ -68,46 +74,51 @@ export class Goldfish {
    * Drive the goldfish spine to a new head position
    * @param {p5.Vector} pos - New head position
    */
-  resolveToPosition(pos, velocity, dt) {
+  resolveToPosition(pos, velocity, dt, isGrabbed = false) {
     this.locomotion.update(pos, velocity, dt);
-    // Update pectoral fin chains: root follows body joint 2
-    const j2 = this.spine.joints[2];
-    const a2 = this.spine.angles[2];
-    const bw2 = this.bodyWidth[2];
-    this.leftPecFin.resolve(createVector(
-      j2.x + cos(a2 + PI / 12 *5) * bw2,
-      j2.y + sin(a2 + PI / 12 *5) * bw2
-    ));
-    this.rightPecFin.resolve(createVector(
-      j2.x + cos(a2 - PI / 12 *5) * bw2,
-      j2.y + sin(a2 - PI / 12 *5) * bw2
-    ));
+    this._updatePectoralFins(isGrabbed);
   }
 
-  /**
-   * Reinitialize the spine at a new position (edge wrapping)
-   * @param {p5.Vector} pos - New head position
-   * @param {number} headingAngle - Direction facing (radians)
-   */
+  /** Reinitialize body and fins together after a wrap or teleport. */
   resetSpine(pos, headingAngle) {
     this.locomotion.reset(pos, headingAngle);
-    // Reset pectoral fin chains: fins trail backward from attachment point
-    const j2 = this.spine.joints[2];
-    const a2 = headingAngle;
-    const bw2 = this.bodyWidth[2];
-    const finAngle = headingAngle + PI; // fins point backward
-    const finLink = this.leftPecFin.linkSize;
-    const fins = [
-      { chain: this.leftPecFin,  rootAngle: a2 + PI / 3 },
-      { chain: this.rightPecFin, rootAngle: a2 - PI / 3 },
-    ];
-    for (const { chain, rootAngle } of fins) {
-      const rx = j2.x + cos(rootAngle) * bw2;
-      const ry = j2.y + sin(rootAngle) * bw2;
-      for (let i = 0; i < chain.joints.length; i++) {
-        chain.joints[i].x = rx + cos(finAngle) * finLink * i;
-        chain.joints[i].y = ry + sin(finAngle) * finLink * i;
-        chain.angles[i] = finAngle;
+    this._updatePectoralFins(false, true);
+  }
+
+  _updatePectoralFins(isGrabbed, reset = false) {
+    const joint = this.spine.joints[2];
+    const heading = this.spine.angles[2];
+    for (const [chain, side] of [[this.leftPecFin, 1], [this.rightPecFin, -1]]) {
+      const rootAngle = heading + side * Math.PI * 5 / 12;
+      const root = createVector(
+        joint.x + Math.cos(rootAngle) * this.bodyWidth[2],
+        joint.y + Math.sin(rootAngle) * this.bodyWidth[2],
+      );
+      if (reset) {
+        // Chain angles point toward the root; joint positions trail behind it.
+        for (let i = 0; i < chain.joints.length; i++) {
+          chain.joints[i].set(
+            root.x - Math.cos(heading) * chain.linkSize * i,
+            root.y - Math.sin(heading) * chain.linkSize * i,
+          );
+          chain.angles[i] = heading;
+        }
+      } else if (isGrabbed) {
+        // Transport the fin in the body's frame. Pointer reversals and thrashing
+        // must not become a new swimming direction for the fin's root.
+        const oldRoot = chain.joints[0].copy();
+        const turn = heading - chain.angles[0];
+        const c = Math.cos(turn), s = Math.sin(turn);
+        for (let i = 0; i < chain.joints.length; i++) {
+          const x = chain.joints[i].x - oldRoot.x;
+          const y = chain.joints[i].y - oldRoot.y;
+          chain.joints[i].set(root.x + c * x - s * y, root.y + s * x + c * y);
+          chain.angles[i] += turn;
+        }
+      } else {
+        // Anchor the root orientation to the body, retaining the trailing IK.
+        chain.angles[0] = heading;
+        chain.resolve(root, 0);
       }
     }
   }

@@ -224,7 +224,7 @@ export class GoldfishBoid {
    */
   resolveRenderPosition() {
     const dt = 1 / 60;
-    this.goldfish.resolveToPosition(this.position.copy(), this.velocity, dt);
+    this.goldfish.resolveToPosition(this.position.copy(), this.velocity, dt, this.isGrabbed);
   }
 
   display() {
