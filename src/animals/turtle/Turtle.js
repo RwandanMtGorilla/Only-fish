@@ -66,7 +66,18 @@ export class Turtle {
    * @param {p5.Vector} pos - New head position
    */
   resolveToPosition(pos) {
-    this.spine.resolve(pos);
+    if (this.isRetracted) {
+      // Preserve the entire pose through mouse reversals and pauses.
+      const delta = p5.Vector.sub(pos, this.spine.joints[0]);
+      for (const joint of this.spine.joints) joint.add(delta);
+      for (const arm of this.arms) {
+        for (const joint of arm.joints) joint.add(delta);
+      }
+      for (const desired of this.armDesired) desired.add(delta);
+      return;
+    }
+    // Fixed 60 Hz simulation: limit turns to PI radians per second.
+    this.spine.resolve(pos, PI / 60);
     this._updateLegs();
   }
 

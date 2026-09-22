@@ -37,6 +37,7 @@ let settings = {
 
 // === 抓取状态机 ===
 let grabbedBoid = null;
+let grabOffset = null;
 let grabHeading = 0;
 let grabThrashState = 'THRASH';
 let grabThrashTimer = 0;
@@ -115,6 +116,10 @@ window.mousePressed = function () {
     if (hit) {
       grabbedBoid = hit;
       grabbedBoid.isGrabbed = true;
+      // Keep the exact clicked point attached to the pointer for rigid dragging.
+      grabOffset = hit.preserveGrabOffset
+        ? p5.Vector.sub(hit.position, createVector(mouseX, mouseY))
+        : null;
       grabHeading = hit.velocity.heading();
       grabThrashState = 'THRASH';
       grabThrashTimer = random(300, 800);
@@ -150,6 +155,7 @@ function releaseGrabbedFish() {
       grabbedBoid.velocity = p5.Vector.fromAngle(grabHeading).mult(grabbedBoid.maxSpeed * 0.3);
     }
     grabbedBoid = null;
+    grabOffset = null;
   }
 }
 
@@ -186,7 +192,9 @@ function updateGrabbedBoid(boid, dt) {
   const finalY = mouseY + sin(perpAngle) * thrashOffset;
 
   // 花瓣: 以几何中心对齐鼠标, 反算根部位置
-  if (boid.isPetal && boid.hitCenter) {
+  if (grabOffset) {
+    boid.position.set(finalX + grabOffset.x, finalY + grabOffset.y);
+  } else if (boid.isPetal && boid.hitCenter) {
     const hc = boid.hitCenter;
     const offsetX = hc.x - boid.position.x;
     const offsetY = hc.y - boid.position.y;

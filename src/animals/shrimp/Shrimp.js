@@ -19,7 +19,7 @@ export class Shrimp {
   }
 
   resolveToPosition(pos) {
-    this.spine.resolve(pos);
+    this.spine.resolve(pos, PI / 60);
   }
 
   resetSpine(pos, headingAngle) {

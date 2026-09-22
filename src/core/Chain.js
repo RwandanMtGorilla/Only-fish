@@ -49,9 +49,15 @@ export class Chain {
   /**
    * Resolve chain position using angle constraints (forward kinematics)
    * @param {p5.Vector} pos - Target position for the head of the chain
+   * @param {number} maxHeadTurn - Maximum heading change per simulation tick
+   * @param {number} maxHeadTurn - Maximum heading change per simulation tick
    */
-  resolve(pos) {
-    this.angles[0] = p5.Vector.sub(pos, this.joints[0]).heading();
+  resolve(pos, maxHeadTurn = TWO_PI) {
+    const movement = p5.Vector.sub(pos, this.joints[0]);
+    // A stationary head has no new direction. Ignore numerical arrival noise.
+    if (movement.mag() > 1e-4) {
+      this.angles[0] = constrainAngle(movement.heading(), this.angles[0], maxHeadTurn);
+    }
     this.joints[0] = pos;
 
     for (let i = 1; i < this.joints.length; i++) {

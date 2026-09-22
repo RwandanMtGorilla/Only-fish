@@ -16,6 +16,7 @@ export class Vector {
   static add(a, b) { return a.copy().add(b); }
   static dist(a, b) { return Vector.sub(a, b).mag(); }
   static fromAngle(a) { return new Vector(Math.cos(a), Math.sin(a)); }
+  static lerp(a, b, t) { return new Vector(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t); }
 }
 Object.assign(globalThis, {
   p5: { Vector }, createVector: (x, y) => new Vector(x, y),

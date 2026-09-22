@@ -64,10 +64,12 @@ export class TurtleBoid {
 
     // 渲染实例 (config.finColor 作为壳颜色)
     this.turtle = new Turtle(this.position.copy(), this.scale, config.bodyColor, config.finColor);
+    this.turtle.resetSpine(this.position, this.velocity.heading());
 
     // 抓取状态 (乌龟缩壳, 不扭动)
     this.isGrabbed = false;
     this.grabThrash = false;
+    this.preserveGrabOffset = true;
 
     // 进食冷却 (乌龟吃得更慢)
     this.lastEatTime = 0;
@@ -75,12 +77,12 @@ export class TurtleBoid {
   }
 
   /**
-   * 命中测试中心: 从头部沿速度反方向偏移到壳附近
+   * 命中测试中心: 从头部沿身体朝向反方向偏移到壳附近
    * 使抓取判定以龟背为中心而非头部
    */
   get hitCenter() {
     const offset = this.scale * 168;  // ≈3.5 linkSize，壳前半区域
-    const heading = this.velocity.heading();
+    const heading = this.turtle.spine.angles[0];
     return createVector(
       this.position.x - cos(heading) * offset,
       this.position.y - sin(heading) * offset
@@ -88,12 +90,12 @@ export class TurtleBoid {
   }
 
   /**
-   * 碰撞判定中心: 从头部沿速度反方向偏移到壳附近
+   * 碰撞判定中心: 从头部沿身体朝向反方向偏移到壳附近
    * 使物理碰撞以龟壳为中心
    */
   get collisionCenter() {
     const offset = this.scale * 96;  // ≈1.75 linkSize，头部与壳之间
-    const heading = this.velocity.heading();
+    const heading = this.turtle.spine.angles[0];
     return createVector(
       this.position.x - cos(heading) * offset,
       this.position.y - sin(heading) * offset
