@@ -7,6 +7,43 @@
 
 import { Chain } from '../../core/Chain.js';
 
+// Pond-turtle scute layout, in shell-radius coordinates (head is at negative X).
+// Reference: https://www.skullsunlimited.com/products/real-pond-turtle-shell-st-135
+// Shared vertices keep the five vertebrals and four pairs of costals watertight.
+const RIM_X = 0.9;
+const RIM_Y = 0.84;
+const rimPoint = angle => [RIM_X * Math.cos(angle), RIM_Y * Math.sin(angle)];
+const rimArc = (from, to) => Array.from({ length: 13 }, (_, i) =>
+  rimPoint(from + (to - from) * i / 12));
+const scuteAngles = [2.58, 2.05, Math.PI / 2, 1.09, 0.56];
+const scuteShoulders = [rimPoint(scuteAngles[0]), [-0.4, 0.38], [0, 0.4],
+  [0.4, 0.37], rimPoint(scuteAngles[4])];
+const scuteJunctions = [[-0.59, 0.23], [-0.2, 0.25], [0.2, 0.25], [0.59, 0.22]];
+const mirror = points => points.map(([x, y]) => [x, -y]);
+const SHELL_SCUTES = [];
+for (let i = 0; i < 5; i++) {
+  const upper = i === 0
+    ? [...rimArc(Math.PI, scuteAngles[0]), scuteJunctions[0]]
+    : i === 4
+      ? [scuteJunctions[3], ...rimArc(scuteAngles[4], 0)]
+      : [scuteJunctions[i - 1], scuteShoulders[i], scuteJunctions[i]];
+  SHELL_SCUTES.push([...upper, ...mirror(upper).reverse()]);
+}
+for (let i = 0; i < 4; i++) {
+  const costal = [scuteShoulders[i], scuteJunctions[i], scuteShoulders[i + 1],
+    ...rimArc(scuteAngles[i + 1], scuteAngles[i])];
+  SHELL_SCUTES.push(costal, mirror(costal));
+}
+
+// A faint inset follows each plate, suggesting growth rings without crowding it.
+const SCUTE_GROWTH_RINGS = SHELL_SCUTES.map(points => {
+  const xs = points.map(p => p[0]);
+  const ys = points.map(p => p[1]);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  return points.map(([x, y]) => [cx + (x - cx) * 0.76, cy + (y - cy) * 0.76]);
+});
+
 export class Turtle {
   /**
    * @param {p5.Vector} origin - Starting position
@@ -216,7 +253,7 @@ export class Turtle {
   }
 
   /**
-   * Draw the rigid turtle shell as an ellipse with pattern lines
+   * Draw the rigid shell with vertebral, costal and marginal scutes.
    * @private
    */
   _drawShell() {
@@ -235,35 +272,31 @@ export class Turtle {
     fill(this.shellColor);
     ellipse(0, 0, this.shellLength, this.shellWidth);
 
-    // Shell pattern lines
+    const rx = this.shellLength / 2;
+    const ry = this.shellWidth / 2;
+    const drawPlate = points => {
+      beginShape();
+      for (const [x, y] of points) vertex(x * rx, y * ry);
+      endShape(CLOSE);
+    };
+
+    // Closed, staggered plates replace the intersecting cross-shell lines.
     noFill();
-    strokeWeight(this.bodyStroke);
+    strokeWeight(2.4 * this.scale);
     stroke(this.shellPatternColor);
+    for (const plate of SHELL_SCUTES) drawPlate(plate);
 
-    // Center longitudinal line
-    line(-this.shellLength * 0.38, 0, this.shellLength * 0.38, 0);
-
-    // Transverse division lines (3 lines splitting the shell into sections)
-    for (const t of [-0.18, 0, 0.18]) {
-      const x = t * this.shellLength;
-      const normalizedX = 2 * t;
-      const halfH = (this.shellWidth / 2) * sqrt(max(0, 1 - normalizedX * normalizedX)) * 0.85;
-      line(x, -halfH, x, halfH);
+    // Eleven marginal plates on either side; seams stop inside the white outline.
+    strokeWeight(1.8 * this.scale);
+    for (let i = 0; i < 22; i++) {
+      const angle = (i + 0.5) * Math.PI * 2 / 22;
+      const [x, y] = rimPoint(angle);
+      line(x * rx, y * ry, Math.cos(angle) * rx * 0.98, Math.sin(angle) * ry * 0.97);
     }
 
-    // Diagonal lines from center to edges (scute pattern)
-    const diagonals = [
-      { fromX: -0.18, toAngle: -PI / 3 },
-      { fromX: -0.18, toAngle: PI / 3 },
-      { fromX: 0.18, toAngle: -2 * PI / 3 },
-      { fromX: 0.18, toAngle: 2 * PI / 3 },
-    ];
-    for (const d of diagonals) {
-      const x1 = d.fromX * this.shellLength;
-      const rx = cos(d.toAngle) * this.shellLength * 0.42;
-      const ry = sin(d.toAngle) * this.shellWidth * 0.42;
-      line(x1, 0, rx, ry);
-    }
+    strokeWeight(1.1 * this.scale);
+    stroke(red(this.shellPatternColor), green(this.shellPatternColor), blue(this.shellPatternColor), 75);
+    for (const ring of SCUTE_GROWTH_RINGS) drawPlate(ring);
 
     pop();
   }
