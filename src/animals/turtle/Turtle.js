@@ -96,14 +96,16 @@ export class Turtle {
 
     // 缩壳状态 (被抓取时头/四肢/尾巴全部缩进壳里)
     this.isRetracted = false;
+    this.retractionProgress = 0;
+    this.releaseDelayMs = 0;
   }
 
   /**
    * Drive the turtle spine to a new head position (called by TurtleBoid)
    * @param {p5.Vector} pos - New head position
    */
-  resolveToPosition(pos) {
-    if (this.isRetracted) {
+  resolveToPosition(pos, preservePose = this.isRetracted) {
+    if (preservePose) {
       // Preserve the entire pose through mouse reversals and pauses.
       const delta = p5.Vector.sub(pos, this.spine.joints[0]);
       for (const joint of this.spine.joints) joint.add(delta);
@@ -166,16 +168,41 @@ export class Turtle {
   }
 
   /**
-   * Render the turtle
+   * Advance the grab/release animation in milliseconds.
    */
-  display() {
-    // 缩壳状态: 只画壳
+  updateRetraction(dt) {
+    // Animate in render time, independently of the fixed-rate physics updates.
+    // Reversing the target mid-animation continues from the current pose.
     if (this.isRetracted) {
+      this.releaseDelayMs = 0;
+      this.retractionProgress = Math.min(1, this.retractionProgress + dt / 140);
+      return;
+    }
+    const waiting = Math.min(dt, this.releaseDelayMs);
+    this.releaseDelayMs -= waiting;
+    // Finish retracting even if the pointer was released during a quick grab.
+    this.retractionProgress = Math.min(1, this.retractionProgress + waiting / 140);
+    this.retractionProgress = Math.max(0, this.retractionProgress - (dt - waiting) / 200);
+  }
+
+  display() {
+    this.updateRetraction(Math.min(Math.max(globalThis.deltaTime ?? 1000 / 60, 0), 50));
+    if (this.retractionProgress === 1) {
       this._drawShell();
       return;
     }
 
     const s = this.scale;
+    const progress = this.retractionProgress;
+    const eased = progress * progress * (3 - 2 * progress);
+    const bodyScale = 1 - 0.55 * eased;
+    const shellCenter = p5.Vector.lerp(this.spine.joints[4], this.spine.joints[5], 0.5);
+
+    // Only the visible skin retracts; the spine and grab anchor stay fixed.
+    push();
+    translate(shellCenter.x, shellCenter.y);
+    scale(bodyScale);
+    translate(-shellCenter.x, -shellCenter.y);
 
     // === LEGS (drawn first, appear behind body and shell) ===
     noFill();
@@ -234,9 +261,6 @@ export class Turtle {
 
     endShape();
 
-    // === SHELL (rigid body, does not deform with spine) ===
-    this._drawShell();
-
     // === EYES ===
     fill(255);
     noStroke();
@@ -250,6 +274,10 @@ export class Turtle {
       this._getPosY(0, -3 * PI / 5, 2 * s),
       this.eyeSize, this.eyeSize
     );
+    pop();
+
+    // Draw last so the head, eyes, feet and tail slide underneath the shell.
+    this._drawShell();
   }
 
   /**

@@ -8,6 +8,72 @@ import { angleDelta } from '../src/core/FishSpine.js';
 import { AnimalRegistry } from '../src/registry/AnimalRegistry.js';
 import { turtleConfig } from '../src/animals/turtle/turtle.config.js';
 import { UIController } from '../src/ui/UIController.js';
+import { fishConfig } from '../src/animals/fish/fish.config.js';
+
+function restingTurtleScene() {
+  const registry = new AnimalRegistry();
+  registry.register({ ...turtleConfig, defaultCount: 1 });
+  registry.register({ ...fishConfig, defaultCount: 1 });
+  registry.init({ walls: false, collisions: true, mouseSeek: true,
+    mousePos: createVector(900, 400), canvasW: 1200, canvasH: 800 });
+  const turtle = registry.groups.get('turtle').boids[0];
+  const fish = registry.groups.get('fish').boids[0];
+  fish.position.set(1000, 700);
+  turtle.resolveRenderPosition();
+  turtle.turtle.updateRetraction(140);
+  turtle.onRelease();
+  return { registry, turtle, fish };
+}
+
+test('released turtle waits, emerges without steering, then resumes swimming', () => {
+  const { registry, turtle, fish } = restingTurtleScene();
+  registry.settings.mouseSeek = false;
+  fish.velocity.set(0, 0);
+  const initial = turtle.position.copy();
+  for (let i = 0; i < 13; i++) {
+    registry.update(null);
+    turtle.turtle.updateRetraction(50);
+    assert.deepEqual(turtle.position, initial);
+    assert.equal(turtle.turtle.retractionProgress, 1);
+  }
+  for (let i = 0; i < 4; i++) {
+    registry.update(null);
+    assert.deepEqual(turtle.position, initial);
+    turtle.turtle.updateRetraction(50);
+  }
+  assert.equal(turtle.isRestingInShell, false);
+  registry.update(null);
+  assert.ok(p5.Vector.dist(turtle.position, initial) > 0);
+  const resumedVelocity = turtle.velocity.copy();
+  assert.ok(Math.abs(resumedVelocity.mag() - turtle.maxSpeed * 0.3) < 1e-10);
+  assert.ok(Math.abs(angleDelta(resumedVelocity.heading(), turtle.turtle.spine.angles[0])) < 1e-10);
+  for (let i = 0; i < 10; i++) registry.update(null);
+  assert.deepEqual(turtle.velocity, resumedVelocity);
+});
+
+test('waiting and emerging turtles retain impacts from other species and reset wait on re-grab', () => {
+  for (const elapsed of [0, 750]) {
+    const { registry, turtle, fish } = restingTurtleScene();
+    turtle.turtle.updateRetraction(elapsed);
+    const center = turtle.collisionCenter;
+    fish.position.set(center.x - turtle.radius - fish.radius + 1, center.y);
+    fish.velocity.set(1, 0);
+    fish.flock = () => {};
+    fish.separateFromOthers = () => {};
+    const initial = turtle.position.copy();
+    const angles = [...turtle.turtle.spine.angles];
+    registry.update(null);
+    assert.ok(turtle.velocity.x > 0);
+    registry.update(null);
+    assert.ok(turtle.position.x > initial.x);
+    assert.deepEqual(turtle.turtle.spine.angles, angles);
+    turtle.resolveRenderPosition();
+    assert.equal(turtle.turtle.releaseDelayMs, 0);
+    turtle.onRelease();
+    assert.equal(turtle.turtle.releaseDelayMs, 650);
+    assert.equal(turtle.velocity.mag(), 0);
+  }
+});
 
 for (const Body of [Turtle, Shrimp]) {
   test(`${Body.name} preserves its pose while stationary`, () => {

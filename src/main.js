@@ -154,6 +154,7 @@ function releaseGrabbedFish() {
     } else {
       grabbedBoid.velocity = p5.Vector.fromAngle(grabHeading).mult(grabbedBoid.maxSpeed * 0.3);
     }
+    grabbedBoid.onRelease?.();
     grabbedBoid = null;
     grabOffset = null;
   }

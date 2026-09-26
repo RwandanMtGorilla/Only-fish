@@ -70,6 +70,7 @@ export class TurtleBoid {
     this.isGrabbed = false;
     this.grabThrash = false;
     this.preserveGrabOffset = true;
+    this.resumeSwimmingPending = false;
 
     // 进食冷却 (乌龟吃得更慢)
     this.lastEatTime = 0;
@@ -103,6 +104,23 @@ export class TurtleBoid {
   }
 
   // === 乌龟的 Boid 行为 ===
+
+  get isRestingInShell() {
+    return this.turtle.releaseDelayMs > 0 || this.turtle.retractionProgress > 0;
+  }
+
+  onRelease() {
+    this.turtle.isRetracted = false;
+    this.turtle.releaseDelayMs = 650;
+    this.resumeSwimmingPending = true;
+    // Discard the release swimming velocity once, retaining subsequent impacts.
+    this.velocity.set(0, 0);
+  }
+
+  applyForce(force, coefficient = 1) {
+    if (this.isRestingInShell) return;
+    this.velocity.add(force.copy().mult(coefficient)).limit(this.maxSpeed);
+  }
 
   /**
    * Separation: 远离附近 boid, 含 colorSeparation 额外排斥
@@ -186,6 +204,16 @@ export class TurtleBoid {
    * 计算并施加所有群体行为力 (组内)
    */
   flock(sameGroupBoids, settings, updateTime = millis()) {
+    if (this.isRestingInShell) return;
+    if (this.resumeSwimmingPending) {
+      // Restart once after emerging, even without neighbors or attractors.
+      // Keep any impact velocity already strong enough to carry us along.
+      const resumeSpeed = this.maxSpeed * 0.3;
+      if (this.velocity.mag() < resumeSpeed) {
+        this.velocity.set(p5.Vector.fromAngle(this.turtle.spine.angles[0]).mult(resumeSpeed));
+      }
+      this.resumeSwimmingPending = false;
+    }
     const alignForce = this.align(sameGroupBoids, updateTime);
     const separateForce = this.separate(sameGroupBoids);
     const cohesionForce = this.cohesion(sameGroupBoids);
@@ -226,12 +254,12 @@ export class TurtleBoid {
   /**
    * 物理更新: 位移 + 碰撞 + 边界 + IK 解算
    */
-  physicsUpdate(sameGroupBoids, settings) {
+  physicsUpdate(sameGroupBoids, settings, allBoids = sameGroupBoids) {
     this.turtle.isRetracted = false;
     this.position.add(this.velocity);
-    if (settings.collisions) this.detectCollision(sameGroupBoids);
+    if (settings.collisions) this.detectCollision(this.isRestingInShell ? allBoids : sameGroupBoids);
     this.edgeCheck(settings.walls, settings.canvasW, settings.canvasH);
-    this.turtle.resolveToPosition(this.position.copy());
+    this.turtle.resolveToPosition(this.position.copy(), this.isRestingInShell);
   }
 
   /**
@@ -239,6 +267,7 @@ export class TurtleBoid {
    */
   resolveRenderPosition() {
     this.turtle.isRetracted = true;
+    this.turtle.releaseDelayMs = 0;
     this.turtle.resolveToPosition(this.position.copy());
   }
 

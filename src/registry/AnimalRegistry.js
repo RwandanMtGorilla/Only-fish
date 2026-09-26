@@ -144,7 +144,7 @@ export class AnimalRegistry {
     }
     for (const { boids } of ordered) {
       for (const boid of boids) {
-        if (boid !== grabbedBoid) boid.physicsUpdate(boids, this.settings);
+        if (boid !== grabbedBoid) boid.physicsUpdate(boids, this.settings, all);
       }
     }
     this._purgeDeadBoids();
